@@ -61,6 +61,10 @@ class CommandError(Exception):
 
 class DelayStage(Device):
     def __init__(self, port=None, com_time=0.1):
+        # Initialize serial communications with port and open that port
+        Device.__init__(self, port)
+        self.open_com()
+
         self._states = {
             '0A' : 'NOT REFERENCED from RESET.',
             '0B' : 'NOT REFERENCED from HOMING.',
@@ -83,25 +87,21 @@ class DelayStage(Device):
         self._cmd_error = '@'
         self._pos = 0
         self._state = '0A'
-        # Initialize serial communications with port and open that port
-        Device.__init__(self, port)
-        self.open_com()
 
         # 'Home' the delay stage and get current position,
         # a value from -100 to 100 mm
 
-        #print('Homing the delay stage, and entering command receptive state')
-        #self.write('1OR', self._com_time)
-        #self._pos = None
+        print('Homing the delay stage, and entering command receptive state')
+        self.write(b'1OR', self._com_time)
 
     def set_home(self):
-        self.write('1HT1')
+        self.write(b'1HT1')
 
     # Gets the positioner state.  The output is a string with 6 characters such
     # that the first 4 characters correspond to an error code and the last 2
     # to the state of the device.
     def query_state(self):
-        self.write('1TS', self._com_time)
+        self.write(b'1TS', self._com_time)
         line = self.read()
         self._pos_error = line[3:7]
         self._state = line[7:9]
@@ -112,15 +112,15 @@ class DelayStage(Device):
 
     # Stop any motion
     def stop_motion():
-        self.write('1ST', self._com_time)
+        self.write(b'1ST', self._com_time)
 
     # Enter DISABLE state
     def disable():
-        self.write('1MM0', self._com_time)
+        self.write(b'1MM0', self._com_time)
 
     # Re-enter READY state
     def enable():
-        self.write('1MM1', self._com_time)
+        self.write(b'1MM1', self._com_time)
 
     ############################################################################
     # Poperty and setter functions for delay stage position.
@@ -135,14 +135,13 @@ class DelayStage(Device):
     @pos.setter
     def pos(self, val):
         try:
-            relative_move = np.abs(self._pos - value)
-
-            self.write('1PT%f' % relative_move, self._com_time)
+            relative_move = np.abs(self._pos - val)
+            self.write(b'1PT%f' % relative_move, self._com_time)
             t = float(self.read()[3:])
 
-            self.write('1PA%f' % val, t + self._com_time)
+            self.write(b'1PA%f' % val, t + self._com_time)
 
-            self.write('1TE', self._com_time) # Last command error
+            self.write(b'1TE', self._com_time) # Last command error
             self._cmd_error = self.read()[3]
 
             if self._cmd_error != '@':
@@ -152,14 +151,20 @@ class DelayStage(Device):
             if int(self._error, 16):
                raise PositionerError(self._pos_error)
 
-            self.write('1TP?', self._com_time)
+            self.write(b'1TP?', self._com_time)
             self._pos = float(self.read()[3:])
 
-        except PositionerError:
-            print('Position Not Moved!')
+            self.last_action = 'Position moved to: %s' % (self._pos)
 
-        except CommandError:
-            print('Position Not Moved!')
+        except PositionerError as e:
+            self.last_action = 'Position not moved! Positioner Error: %s' \
+                                                                    % (e.msg)
+        except CommandError as e:
+            self.last_action = 'Position not moved! Command Error: %s' \
+                                                                    % (e.msg)
+        except Exception as e:
+            self.last_action = 'Position not moved! Unknown error. Check \
+                                                                    terminal.'
 
     ############################################################################
     # Velocity property and setter functions.
@@ -170,9 +175,9 @@ class DelayStage(Device):
     @vel.setter
     def vel(self, val):
         try:
-            self.write('1VA%f' % val, self._com_time)
+            self.write(b'1VA%f' % val, self._com_time)
 
-            self.write('1TE', self._com_time) # Last command error
+            self.write(b'1TE', self._com_time) # Last command error
             self._cmd_error = self.read()[3]
 
             if self._cmd_error != '@':
@@ -182,14 +187,20 @@ class DelayStage(Device):
             if int(self._error, 16):
                raise PositionerError(self._pos_error)
 
-        except PositionerError:
-            print('Position Not Moved!')
+            self.write('1VA?', self._com_time)
+            self._vel = float(self.read()[3:])
 
+            self.last_action = 'Velocity changed to: %s' % (self._pos)
+
+        except PositionerError as e:
+            self.last_action = 'Velocity not changed! Positioner Error:\
+                                                                 %s' % (e.msg)
         except CommandError:
-            print('Position Not Moved!')
-
-        self.write('1VA?', self._com_time)
-        self._vel = float(self.read()[3:])
+           self.last_action = 'Velocity not changed! Command Error: %s' \
+                                                                    % (e.msg)
+        except Exception as e:
+            self.last_action = 'Velocity not changed! Unknown error. \
+                                                                Check terminal.'
 
     ############################################################################
     # Acceleration property and setter functions.
@@ -201,9 +212,9 @@ class DelayStage(Device):
     @property
     def accel(self, val):
         try:
-            self.write('1AC%f' % val, self._com_time)
+            self.write(b'1AC%f' % val, self._com_time)
 
-            self.write('1TE', self._com_time) # Last command error
+            self.write(b'1TE', self._com_time) # Last command error
             self._cmd_error = self.read()[3]
 
             if self._cmd_error != '@':
@@ -213,12 +224,16 @@ class DelayStage(Device):
             if int(self._error, 16):
                raise PositionerError(self._pos_error)
 
+            self.write(b'1AC?', self._com_time)
+            self._accel = float(self.read()[3:])
+
         except PositionerError:
-            print('Position Not Moved!')
+            self.last_action = 'Acceleration not changed! Positioner Error: \
+                                                                    %s'% (e.msg)
 
         except CommandError:
-            print('Position Not Moved!')
-
-        self.write('1AC?', self._com_time)
-        self._accel = float(self.read()[3:])
-           
+           self.last_action = 'Acceleration not changed! Command Error: %s' \
+                                                                    % (e.msg)
+        except Exception as e:
+            self.last_action = 'Velocity not changed! Unknown error. \
+                                                                Check terminal.'

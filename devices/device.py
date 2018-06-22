@@ -20,8 +20,9 @@ class Device(object):
         try:
             self.com = serial.Serial(timeout=0, baudrate=115200)
             self.com.port = port
+            self.last_action = 'Port opened.'
         except serial.SerialException:
-            print('Serial port already open.')
+            self.last_action = 'Serial port already open.'
         Device.num_devices += 1
 
     def __del__(self):
@@ -39,7 +40,7 @@ class Device(object):
     def write(self, command, waittime):
         # Commands from sub-class devices don't need to include the newline
         # character as it is included here
-        self.com.write(b'%s\n' % (command))
+        self.com.write(b'%b\n' % (command))
         time.sleep(waittime)
 
     def read(self):
