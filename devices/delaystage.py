@@ -88,14 +88,76 @@ class DelayStage(Device):
         self._pos = 0
         self._state = '0A'
 
+    def home(self):
         # 'Home' the delay stage and get current position,
         # a value from -100 to 100 mm
+        try:
+            self.write(b'1OR', self._com_time)
+            self.check_errors()
+        except PositionerError as e:
+            self.last_action = 'Positioner Error: %s' % (e.msg)
+        except CommandError as e:
+            self.last_action = 'Command Error: %s' % (e.msg)
+        except Exception as e:
+            self.last_action = 'Unknown error.'
 
-        print('Homing the delay stage, and entering command receptive state')
-        self.write(b'1OR', self._com_time)
+    # Stop any motion
+    def stop_motion():
+        try:
+            self.write(b'1ST', self._com_time)
+            if self._cmd_error != '@':
+                raise CommandError(self._cmd_error)
 
-    def set_home(self):
-        self.write(b'1HT1')
+            self.query_state()
+            if int(self._error, 16):
+               raise PositionerError(self._pos_error)
+
+            self.write(b'1TP?', self._com_time)
+            self._pos = float(self.read()[3:])
+            self.last_action = 'Motion stopped at: %s' % (self._pos)
+        except PositionerError as e:
+            self.last_action = 'Positioner Error: %s' % (e.msg)
+        except CommandError as e:
+            self.last_action = 'Command Error: %s' % (e.msg)
+        except Exception as e:
+            self.last_action = 'Unknown error.'
+
+    # Enter DISABLE state
+    def disable():
+        try:
+            self.write(b'1MM0', self._com_time)
+            self.check_errors()
+            self.last_action = 'Entered DISABLE state'
+        except PositionerError as e:
+            self.last_action = 'Positioner Error: %s' % (e.msg)
+        except CommandError as e:
+            self.last_action = 'Command Error: %s' % (e.msg)
+        except Exception as e:
+            self.last_action = 'Unknown error.'
+
+    # Re-enter READY state
+    def enable():
+        try:
+            self.write(b'1MM1', self._com_time)
+            self.check_errors()
+            self.last_action = 'Entered READY state'
+        except PositionerError as e:
+            self.last_action = 'Positioner Error: %s' % (e.msg)
+        except CommandError as e:
+            self.last_action = 'Command Error: %s' % (e.msg)
+        except Exception as e:
+            self.last_action = 'Unknown error.'
+
+    # Read last command error, and query stateto see if there are positioner
+    # errors
+    def check_errors(self):
+        self.write(b'1TE', self._com_time) # Last command error
+        self._cmd_error = self.read()[3]
+        if self._cmd_error != '@':
+            raise CommandError(self._cmd_error)
+        self.query_state()
+        if int(self._error, 16):
+            raise PositionerError(self._pos_error)
 
     # Gets the positioner state.  The output is a string with 6 characters such
     # that the first 4 characters correspond to an error code and the last 2
@@ -109,18 +171,6 @@ class DelayStage(Device):
     @property
     def state(self):
         return self._states[self._state]
-
-    # Stop any motion
-    def stop_motion():
-        self.write(b'1ST', self._com_time)
-
-    # Enter DISABLE state
-    def disable():
-        self.write(b'1MM0', self._com_time)
-
-    # Re-enter READY state
-    def enable():
-        self.write(b'1MM1', self._com_time)
 
     ############################################################################
     # Poperty and setter functions for delay stage position.
@@ -213,27 +263,34 @@ class DelayStage(Device):
     def accel(self, val):
         try:
             self.write(b'1AC%f' % val, self._com_time)
-
-            self.write(b'1TE', self._com_time) # Last command error
-            self._cmd_error = self.read()[3]
-
-            if self._cmd_error != '@':
-                raise CommandError(self._cmd_error)
-
-            self.query_state()
-            if int(self._error, 16):
-               raise PositionerError(self._pos_error)
-
+            self.check_errors()
             self.write(b'1AC?', self._com_time)
             self._accel = float(self.read()[3:])
-
         except PositionerError:
             self.last_action = 'Acceleration not changed! Positioner Error: \
                                                                     %s'% (e.msg)
-
         except CommandError:
            self.last_action = 'Acceleration not changed! Command Error: %s' \
                                                                     % (e.msg)
         except Exception as e:
             self.last_action = 'Velocity not changed! Unknown error. \
                                                                 Check terminal.'
+
+    ############################################################################
+    # WARNING: Set home parameter, or other system parameters can only be done
+    # from the 'Configuration' state (serial commands PW0/PW1 to enter and leave
+    # - refer to manual).  Writing to the system is limited to 100 writes, and
+    # further edits can cause damage.
+    #def set_home(self):
+    #    try:
+    #        self.write(b'1HT1')
+    #        self.check_errors()
+    #        self.write(b'1TP?', self._com_time)
+    #        self._pos = float(self.read()[3:])
+    #        self.last_action = 'HOME set to %s: ' % (self._pos)
+    #    except PositionerError as e:
+    #        self.last_action = 'Positioner Error: %s' % (e.msg)
+    #    except CommandError as e:
+    #        self.last_action = 'Command Error: %s' % (e.msg)
+    #    except Exception as e:
+    #        self.last_action = 'Unknown error.'                                                                

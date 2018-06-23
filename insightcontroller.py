@@ -19,12 +19,16 @@ class InsightController(Insight, BaseWidget):
         self._fixed_shutter_button = ControlButton('1040 nm Shutter')
         self._fixed_shutter_button.value = self._fixed_shutter_control
 
+        self._action_history = ControlTextArea('Action and Error History')
+        self._action_history.readonly = True
+        self._update_history()
         self._state_label = ControlLabel('%s' % (self.state))
-        self._stats_labels()
 
-        self.area = ControlTextArea()
-        self.area.readonly = True
-        self.area.__add__('%s\n%s' % (self.diode1_curr, self.diode1_hrs))
+        # Stored buffer with fault codes
+        self._code_history = ControlTextArea('Status Buffer History')
+        self._code_history.readonly = True
+        self._update_code_history()
+        self._stats_labels()
 
         queryThread = threading.Thread(target=self._stage_status)
         queryThread.start()
@@ -32,10 +36,12 @@ class InsightController(Insight, BaseWidget):
         statsThread = threading.Thread(target=self._update_stats_labels)
         statsThread.start()
 
+        self.organization()
+
     def _stage_status(self):
         while 1:
             time.sleep(2)
-            self.query_state()
+            full_state = self.query_state()
             self._state_label.value = self.state
 
     def _stats_labels(self):
@@ -67,30 +73,41 @@ class InsightController(Insight, BaseWidget):
 
     def _emission(self):
         if self._emission_button.label == 'Laser Off':
-            print('Turning On')
             self.turnon()
         else:
             self.turnoff()
+        self._update_history()
 
     def _main_shutter_control(self):
         if self.main_shutter == 0:
             self.main_shutter = 1
         else:
             self.main_shutter = 0
+        self._update_history()
 
     def _fixed_shutter_control(self):
         if self.main_shutter == 0:
             self.fixed_shutter = 1
         else:
             self.fixed_shutter = 0
+        self._update_history()
+
+    def _update_history(self):
+        t = time.asctime(time.localtime())
+        self._action_history.__add__('%s: %s' % (t, self.last_action))
+        print(self._action_history.value)
+
+    def _update_code_history(self):
+        t = time.asctime(time.localtime())
+        string = self.read_history()
+        self._code_history.__add__('Time of buffer reading: %s\n %s' \
+                                                                % (t, string))
+        self._update_history()
 
     def organization(self):
         self.formset = [
-        ('', 'h5:Current Position (mm):', '_pos_label'),
-        ('_gotopos_text', '', '_absmov_button'),
-        ('h5:Make a relative move (mm)'),
-        ('_movrev_button', '', '_relmov_text', '', '_movfor_button'),
-        ('h5:Delay Stage State','_state_label')
+        ('_emission_button', '_main_shutter_button', '_fixed_shutter_button'),
+        ('_action_history', '||', '_code_history')
         ]
 
 if __name__ == "__main__" : pyforms.start_app(InsightController)

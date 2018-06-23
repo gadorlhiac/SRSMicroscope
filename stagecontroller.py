@@ -13,6 +13,13 @@ class StageController(DelayStage, BaseWidget):
         BaseWidget.__init__(self, 'Delay Stage Controls')
         self.set_margin(10)
 
+        self._home_button = ControlButton('Home')
+        self._home_button.value = self.home
+        self._disable_button = ControlButton('Disable')
+        self._disable_button.value = self.disable
+        self._enable_button = ControlButton('Enable')
+        self._enable_button.value = self.enable
+
         self._pos_label = ControlLabel('%f' % (self.pos))
         self._gotopos_text = ControlText('Move to position:')
         self._absmov_button = ControlButton('>')
@@ -24,8 +31,8 @@ class StageController(DelayStage, BaseWidget):
         self._movrev_button = ControlButton('<<')
         self._movrev_button.value = self._movrev
 
-        self._history = ControlTextArea()
-        self._history.readonly = True
+        self._action_history = ControlTextArea('Action and Error History')
+        self._action_history.readonly = True
         self._update_history()
         self._state_label = ControlLabel('%s' % (self.state))
 
@@ -68,15 +75,16 @@ class StageController(DelayStage, BaseWidget):
 
     def _update_history(self):
         t = time.asctime(time.localtime())
-        self._history.__add__('%s: %s' % (t, self.last_action))
+        self._action_history.__add__('%s: %s' % (t, self.last_action))
 
     def organization(self):
         self.formset = [
+        ('_home_button', '', '_disable_button', '','_enable_button'),
         ('', 'h5:Current Position (mm):', '_pos_label'),
         ('_gotopos_text', '', '_absmov_button'),
         ('h5:Make a relative move (mm)'),
         ('_movrev_button', '', '_relmov_text', '', '_movfor_button'),
-        ('h5:Delay Stage State','_state_label'),
+        ('h5:Delay Stage State:','_state_label'),
         ('_history')
         ]
 
