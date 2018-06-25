@@ -1,10 +1,10 @@
 #! /usr/bin/env python
 
-import serial
+from serial import serial
 import time
 
 class ComError(Exception):
-    """Exception for no com input"""
+    """Exception for no com input -- For delay stage and insight"""
     def __init__(self):
         self.msg = 'Enter communication port as string, e.g. \'COM1\''
 

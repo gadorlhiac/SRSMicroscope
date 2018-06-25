@@ -8,10 +8,13 @@ from pyforms.controls import ControlText, ControlButton, ControlLabel
 from pyforms.controls import ControlTextArea
 
 class InsightController(Insight, BaseWidget):
-    def __init__(self):
-        Insight.__init__(self, port='/dev/tty2', com_time=0.1)
+    def __init__(self, port, com_time):
+        #Insight.__init__(self, port='/dev/tty2', com_time=0.1)
+        Insight.__init__(self, port=port, com_time=com_time)
         BaseWidget.__init__(self, 'Insight DS+ Controls')
+        self.set_margin(10)
 
+        # Emission and shutter operation
         self._emission_button = ControlButton('Laser Off')
         self._emission_button.value = self._emission
         self._main_shutter_button = ControlButton('Main Shutter')
@@ -19,7 +22,18 @@ class InsightController(Insight, BaseWidget):
         self._fixed_shutter_button = ControlButton('1040 nm Shutter')
         self._fixed_shutter_button.value = self._fixed_shutter_control
 
-        self._action_history = ControlTextArea('Action and Error History')
+        # OPO Tuning
+        self._main_wl_label = ControlLabel('Main Wavelength (nm): %s' \
+                                                            % str(self.opo_wl))
+        self._tune_wl_val = ControlText('Set Wavelength (nm):')
+        self._tune_wl_button = ControlButton('Set')
+        self._tune_wl_button.value = self._tune_wl
+
+        # Define statistics displays
+        self._stats_labels()
+
+        # Action and error log
+        self._action_history = ControlTextArea('Action and Error Log')
         self._action_history.readonly = True
         self._update_history()
         self._state_label = ControlLabel('%s' % (self.state))
@@ -28,13 +42,12 @@ class InsightController(Insight, BaseWidget):
         self._code_history = ControlTextArea('Status Buffer History')
         self._code_history.readonly = True
         self._update_code_history()
-        self._stats_labels()
 
-        queryThread = threading.Thread(target=self._stage_status)
-        queryThread.start()
+        self.queryThread = threading.Thread(target=self._stage_status)
+        self.queryThread.start()
 
-        statsThread = threading.Thread(target=self._update_stats_labels)
-        statsThread.start()
+        self.statsThread = threading.Thread(target=self._update_stats_labels)
+        self.statsThread.start()
 
         self.organization()
 
@@ -95,7 +108,6 @@ class InsightController(Insight, BaseWidget):
     def _update_history(self):
         t = time.asctime(time.localtime())
         self._action_history.__add__('%s: %s' % (t, self.last_action))
-        print(self._action_history.value)
 
     def _update_code_history(self):
         t = time.asctime(time.localtime())
@@ -104,10 +116,23 @@ class InsightController(Insight, BaseWidget):
                                                                 % (t, string))
         self._update_history()
 
+    def _tune_wl(self):
+        self.opo_wl = self._tune_wl_val.value
+        self._update_history()
+
     def organization(self):
         self.formset = [
+        ('', 'h5:Laser Operation', ''),
         ('_emission_button', '_main_shutter_button', '_fixed_shutter_button'),
+        ('', 'h5:Wavelength Selection', ''),
+        ('_main_wl_label'),
+        ('_tune_wl_val','','_tune_wl_button'),
+        ('', 'h5:Laser Statistics', ''),
+        ('_diode1_hrs_label', '', '_diode2_hrs_label'),
+        ('_diode1_temp_label', '', '_diode2_temp_label'),
+        ('_diode1_curr_label', '', '_diode2_curr_label'),
+        ('','h5:Logs',''),
         ('_action_history', '||', '_code_history')
         ]
 
-if __name__ == "__main__" : pyforms.start_app(InsightController)
+#if __name__ == "__main__" : pyforms.start_app(InsightController)

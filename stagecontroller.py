@@ -8,8 +8,9 @@ from pyforms.controls import ControlText, ControlButton, ControlLabel
 from pyforms.controls import ControlTextArea
 
 class StageController(DelayStage, BaseWidget):
-    def __init__(self):
-        DelayStage.__init__(self, port='/dev/tty2', com_time=0.1)
+    def __init__(self, port, com_time):
+        #DelayStage.__init__(self, port='/dev/tty2', com_time=0.1)
+        DelayStage.__init__(self, port=port, com_time=com_time)
         BaseWidget.__init__(self, 'Delay Stage Controls')
         self.set_margin(10)
 
@@ -18,7 +19,7 @@ class StageController(DelayStage, BaseWidget):
         self._disable_button = ControlButton('Disable')
         self._disable_button.value = self.disable
         self._enable_button = ControlButton('Enable')
-        self._enable_button.value = self.enable
+        self._enable_button.value = self._enable
 
         self._pos_label = ControlLabel('%f' % (self.pos))
         self._gotopos_text = ControlText('Move to position:')
@@ -31,15 +32,15 @@ class StageController(DelayStage, BaseWidget):
         self._movrev_button = ControlButton('<<')
         self._movrev_button.value = self._movrev
 
-        self._action_history = ControlTextArea('Action and Error History')
+        self._action_history = ControlTextArea('Action and Error Log')
         self._action_history.readonly = True
         self._update_history()
         self._state_label = ControlLabel('%s' % (self.state))
 
         self.organization()
 
-        queryThread = threading.Thread(target=self._stage_status)
-        queryThread.start()
+        self.queryThread = threading.Thread(target=self._stage_status)
+        self.queryThread.start()
 
     def _stage_status(self):
         while 1:
@@ -73,19 +74,24 @@ class StageController(DelayStage, BaseWidget):
             self.last_action = 'Improper value entered for motion.'
             self._update_history()
 
+    def _enable(self):
+        self.enable()
+        self._update_history()
+
     def _update_history(self):
         t = time.asctime(time.localtime())
         self._action_history.__add__('%s: %s' % (t, self.last_action))
 
     def organization(self):
         self.formset = [
+        ('', 'h5:Delay Stage Operation', ''),
         ('_home_button', '', '_disable_button', '','_enable_button'),
         ('', 'h5:Current Position (mm):', '_pos_label'),
         ('_gotopos_text', '', '_absmov_button'),
         ('h5:Make a relative move (mm)'),
         ('_movrev_button', '', '_relmov_text', '', '_movfor_button'),
         ('h5:Delay Stage State:','_state_label'),
-        ('_history')
+        ('_action_history')
         ]
 
-if __name__ == "__main__" : pyforms.start_app(StageController)
+#if __name__ == "__main__" : pyforms.start_app(StageController)

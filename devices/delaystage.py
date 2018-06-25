@@ -102,7 +102,7 @@ class DelayStage(Device):
             self.last_action = 'Unknown error.'
 
     # Stop any motion
-    def stop_motion():
+    def stop_motion(self):
         try:
             self.write(b'1ST', self._com_time)
             if self._cmd_error != '@':
@@ -123,7 +123,7 @@ class DelayStage(Device):
             self.last_action = 'Unknown error.'
 
     # Enter DISABLE state
-    def disable():
+    def disable(self):
         try:
             self.write(b'1MM0', self._com_time)
             self.check_errors()
@@ -136,7 +136,7 @@ class DelayStage(Device):
             self.last_action = 'Unknown error.'
 
     # Re-enter READY state
-    def enable():
+    def enable(self):
         try:
             self.write(b'1MM1', self._com_time)
             self.check_errors()
@@ -190,16 +190,7 @@ class DelayStage(Device):
             t = float(self.read()[3:])
 
             self.write(b'1PA%f' % val, t + self._com_time)
-
-            self.write(b'1TE', self._com_time) # Last command error
-            self._cmd_error = self.read()[3]
-
-            if self._cmd_error != '@':
-                raise CommandError(self._cmd_error)
-
-            self.query_state()
-            if int(self._error, 16):
-               raise PositionerError(self._pos_error)
+            self.check_errors()
 
             self.write(b'1TP?', self._com_time)
             self._pos = float(self.read()[3:])
@@ -226,16 +217,7 @@ class DelayStage(Device):
     def vel(self, val):
         try:
             self.write(b'1VA%f' % val, self._com_time)
-
-            self.write(b'1TE', self._com_time) # Last command error
-            self._cmd_error = self.read()[3]
-
-            if self._cmd_error != '@':
-                raise CommandError(self._cmd_error)
-
-            self.query_state()
-            if int(self._error, 16):
-               raise PositionerError(self._pos_error)
+            self.check_errors()
 
             self.write('1VA?', self._com_time)
             self._vel = float(self.read()[3:])
@@ -264,6 +246,7 @@ class DelayStage(Device):
         try:
             self.write(b'1AC%f' % val, self._com_time)
             self.check_errors()
+
             self.write(b'1AC?', self._com_time)
             self._accel = float(self.read()[3:])
         except PositionerError:
