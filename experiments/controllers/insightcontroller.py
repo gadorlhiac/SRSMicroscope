@@ -70,7 +70,7 @@ class InsightController(Insight, BaseWidget):
         self._diode1_temp_label = ControlLabel('Diode 1 Temperature: \
                                                 %f' % (self.diode1_temp))
         self._diode2_temp_label = ControlLabel('Diode 2 Temperature: \
-                                                %fs  % (self.diode2_temp))
+                                                %f'  % (self.diode2_temp))
         self._diode1_curr_label = ControlLabel('Diode 1 Current: \
                                                 %f' % (self.diode1_curr))
         self._diode2_curr_label = ControlLabel('Diode 2 Current: \
