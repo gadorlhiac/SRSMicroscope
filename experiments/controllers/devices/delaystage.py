@@ -188,7 +188,7 @@ class DelayStage(Device):
         try:
             relative_move = np.abs(self._pos - val)
             self.write(b'1PT%f' % relative_move, self._com_time)
-            t = float(self.read()[3:].decode('ascii'))
+            t = float(self.read()[3:])
 
             self.write(b'1PA%f' % val, t + self._com_time)
             self.check_errors()
