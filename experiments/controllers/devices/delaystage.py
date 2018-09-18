@@ -158,7 +158,8 @@ class DelayStage(Device):
         if self._cmd_error != '@':
             raise CommandError(self._cmd_error)
         self.query_state()
-        if int(self._pos_error, 16):
+        mask = 1111111111101111
+        if int(self._pos_error, 16) & mask:
             raise PositionerError(self._pos_error)
 
     # Gets the positioner state.  The output is a string with 6 characters such
@@ -172,7 +173,14 @@ class DelayStage(Device):
 
     @property
     def state(self):
-        return self._states[self._state]
+        try:
+            return self._states[self._state]
+        except KeyError as e:
+            self.last_action = '%s. Last state query: %s%s' % (e.msg, \
+                                                               self._pos_error, \
+                                                               self._state)
+        finally:
+            return self._states[self._state]
 
     ############################################################################
     # Poperty and setter functions for delay stage position.
