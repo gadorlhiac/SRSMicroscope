@@ -24,7 +24,7 @@ class PositionerError(Exception):
         for b in map(int, list(error_code)):
             mask.append(bool(b))
 
-        self.msg = ', '.join(_pos_errors[mask])
+        self.msg = ', '.join(self._pos_errors[mask])
 
     def __str__(self):
         return self.msg
@@ -54,7 +54,7 @@ class CommandError(Exception):
         for b in map(int, list(error_code)):
             mask.append(bool(b))
 
-        self.msg = ', '.join(_positioner_errors[mask])
+        self.msg = ', '.join(_cmd_errors[mask])
 
     def __str__(self):
         return self.msg
@@ -153,7 +153,7 @@ class DelayStage(Device):
     # errors
     def check_errors(self):
         self.write(b'1TE', self._com_time) # Last command error
-        self._cmd_error = self.read()[3]
+        self._cmd_error = self.read()[3:].strip()
         if self._cmd_error != '@':
             raise CommandError(self._cmd_error)
         self.query_state()
