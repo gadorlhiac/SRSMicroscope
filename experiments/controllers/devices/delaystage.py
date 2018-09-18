@@ -21,8 +21,7 @@ class PositionerError(Exception):
     """Exception for positioner error"""
     def __init__(self, error_code):
         mask = []
-        e = bin(int(error_code, 16))[2:].zfill(16)
-        for b in e:
+        for b in error_code:
             mask.append(bool(int(b)))
 
         self.msg = ', '.join(self._pos_errors[mask])
@@ -80,11 +79,20 @@ class DelayStage(Device):
             '3D' : 'DISABLE from MOVING.'
         }
         self._com_time = com_time # Wait time for read/write
+
+        # Place holders for state and errors
         self._pos_error = '0000'
         self._cmd_error = '@'
+        self._state = '0A'
+
+        # Initialize values
         self.write(b'1TP?', self._com_time)
         self._pos = float(self.read()[3:])
-        self._state = '0A'
+        self.write('1VA?', self._com_time)
+        self._vel = float(self.read()[3:])
+        self.write(b'1AC?', self._com_time)
+        self._accel = float(self.read()[3:])
+
 
     def home(self):
         # 'Home' the delay stage and get current position,
@@ -158,9 +166,10 @@ class DelayStage(Device):
         if self._cmd_error != '@':
             raise CommandError(self._cmd_error)
         self.query_state()
-        mask = 1111111111101111
-        if int(self._pos_error, 16) & mask:
-            raise PositionerError(self._pos_error)
+        mask = 0b1111111111101111
+        error_code = bin(int(self._pos_error, 16))[2:].zfill(16)
+        if int(error_code, 2) & mask:
+            raise PositionerError(error_code)
 
     # Gets the positioner state.  The output is a string with 6 characters such
     # that the first 4 characters correspond to an error code and the last 2
@@ -187,9 +196,10 @@ class DelayStage(Device):
     # Setter function will move the delay stage, using the absolute motion
     # command - NOT the relative motion command.  Time for motion is calculated
     # from relative move, and is used as the program waiting time.
-
     @property
     def pos(self):
+        self.write(b'1TP?', self._com_time)
+        self._pos = float(self.read()[3:])
         return self._pos
 
     @pos.setter
@@ -222,6 +232,8 @@ class DelayStage(Device):
     # Velocity property and setter functions.
     @property
     def vel(self):
+        self.write('1VA?', self._com_time)
+        self._vel = float(self.read()[3:])
         return self._vel
 
     @vel.setter
@@ -248,9 +260,10 @@ class DelayStage(Device):
 
     ############################################################################
     # Acceleration property and setter functions.
-
     @property
     def accel(self):
+        self.write(b'1AC?', self._com_time)
+        self._accel = float(self.read()[3:])
         return self._accel
 
     @property
