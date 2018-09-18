@@ -34,11 +34,13 @@ class ziDAQController(ziDAQ, BaseWidget):
         self._update_history()
 
         self._organization()
-        self.scopeThread = threading.Thread(target=self._plot_scope, args=(0))
+        self.scopeThread = threading.Thread(target=self._plot_scope, args=[0])
         self.scopeThread.start()
+        self._update_history()
 
         self.monitorThread = threading.Thread(target=self._monitor)
         self.monitorThread.start()
+        self._update_history()
 
     def _monitor(self):
         while 1:
@@ -69,7 +71,6 @@ class ziDAQController(ziDAQ, BaseWidget):
         ('', 'h5:Oscilloscope Trace', ''),
         ('', '_scope_viewer', ''),
         ('', 'h5:Logs', ''),
-        ('h5:Make a relative move (mm)'),
         ('_action_history')
         ]
 

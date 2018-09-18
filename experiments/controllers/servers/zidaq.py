@@ -56,7 +56,7 @@ class ziDAQ(object):
             poll_flags = 0
             poll_return_flat_dict = True
             data = self.server.poll(poll_length, poll_timeout, poll_flags, poll_return_flat_dict)
-            self._scope = data['/%s/scopes/0/wave' % (self._name)][0]['wave']
+            self._scope = data['/%s/scopes/%i/wave' % (self._name, channel)][0]['wave']
         except Exception as e:
             self.last_action = e
 
