@@ -15,12 +15,12 @@ class BasicExperiment(BaseWidget):
         self._zidaq_panel = ControlEmptyWidget(margin=10)
         self._experiment_panel = ControlEmptyWidget(margin=10)
 
-        self.insight = InsightController('/dev/tty2', 0.01)
+        self.insight = InsightController('COM6', 0.01)
         self.insight.parent = self
         self._insight_panel.value = self.insight
 
 
-        self.delaystage = StageController('/dev/tty2', 0.01)
+        self.delaystage = StageController('COM7', 0.01)
         self.delaystage.parent = self
         self._stage_panel.value = self.delaystage
 
