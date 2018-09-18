@@ -88,7 +88,7 @@ class DelayStage(Device):
         # Initialize values
         self.write(b'1TP?', self._com_time)
         self._pos = float(self.read()[3:])
-        self.write('1VA?', self._com_time)
+        self.write(b'1VA?', self._com_time)
         self._vel = float(self.read()[3:])
         self.write(b'1AC?', self._com_time)
         self._accel = float(self.read()[3:])
@@ -232,7 +232,7 @@ class DelayStage(Device):
     # Velocity property and setter functions.
     @property
     def vel(self):
-        self.write('1VA?', self._com_time)
+        self.write(b'1VA?', self._com_time)
         self._vel = float(self.read()[3:])
         return self._vel
 
@@ -243,7 +243,7 @@ class DelayStage(Device):
             tmp = self.read()
             self.check_errors()
 
-            self.write('1VA?', self._com_time)
+            self.write(b'1VA?', self._com_time)
             self._vel = float(self.read()[3:])
 
             self.last_action = 'Velocity changed to: %s' % (self._pos)

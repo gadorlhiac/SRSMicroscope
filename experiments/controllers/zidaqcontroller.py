@@ -26,7 +26,7 @@ class ziDAQController(ziDAQ, BaseWidget):
         self._sigout_sele += ('Siginal Output 1', 0)
         self._sigout_sele += ('Siginal Output 2', 1)
 
-        self._scope_viewer = ControlMatplotlib(default=self._scope)
+        self._scope_viewer = ControlMatplotlib(default=self.scope)
 
         # Action and error log
         self._action_history = ControlTextArea('Action and Error Log')
@@ -52,11 +52,11 @@ class ziDAQController(ziDAQ, BaseWidget):
                 self.sigout = so
                 self._update_history
 
-    def _plot_scope(self):
+    def _plot_scope(self, channel):
         while 1:
             time.sleep(0.05)
-            self._poll_scope()
-            self.test.value = self._scope
+            self._poll_scope(channel)
+            self._scope_viewer.value = self.scope
 
     def _update_history(self):
         t = time.asctime(time.localtime())

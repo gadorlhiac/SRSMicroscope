@@ -36,12 +36,12 @@ class StageController(DelayStage, BaseWidget):
 
         # Velocity and acceleration widgets
         self._vel_button = ControlButton('Set')
-        self._vel_button.value = self._setvel
+        self._vel_button.value = self._set_vel
         self._vel_text = ControlText('Set velocity:')
         self._vel_label = ControlLabel('%f' % (self.vel))
 
         self._accel_button = ControlButton('Set')
-        self._accel_button.value = self._setvel
+        self._accel_button.value = self._set_accel
         self._accel_text = ControlText('Set acceleration:')
         self._accel_label = ControlLabel('%f' % (self.vel))
 
@@ -151,11 +151,11 @@ class StageController(DelayStage, BaseWidget):
         ('_gotopos_text', '', '_absmov_button'),
         ('Make a relative move (mm)'),
         ('_movrev_button', '', '_relmov_text', '', '_movfor_button'),
-        ('', '=', '')
+        ('', '', ''),
         ('', 'Current Velocity (mm/s):', '_vel_label'),
-        ('', '_vel_text', ,'_vel_button'),
+        ('', '_vel_text', '_vel_button'),
         ('', 'Current Acceleration (mm/s2):', '_accel_label'),
-        ('', '_accel_text', ,'_accel_button'),
+        ('', '_accel_text', '_accel_button'),
         ('_action_history')
         ]
 
