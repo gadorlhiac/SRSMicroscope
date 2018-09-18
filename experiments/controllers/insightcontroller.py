@@ -17,9 +17,9 @@ class InsightController(Insight, BaseWidget):
         # Emission and shutter operation
         self._emission_button = ControlButton('Laser Off')
         self._emission_button.value = self._emission
-        self._main_shutter_button = ControlButton('Main Shutter')
+        self._main_shutter_button = ControlButton('Main Shutter Closed')
         self._main_shutter_button.value = self._main_shutter_control
-        self._fixed_shutter_button = ControlButton('1040 nm Shutter')
+        self._fixed_shutter_button = ControlButton('1040 nm Shutter Closed')
         self._fixed_shutter_button.value = self._fixed_shutter_control
 
         # OPO Tuning
@@ -45,17 +45,22 @@ class InsightController(Insight, BaseWidget):
 
         self._organization()
 
-        self.queryThread = threading.Thread(target=self._stage_status)
+        self.queryThread = threading.Thread(target=self._insight_status)
         self.queryThread.start()
 
         self.statsThread = threading.Thread(target=self._update_stats_labels)
         self.statsThread.start()
 
-    def _stage_status(self):
+    def _insight_status(self):
         while 1:
             time.sleep(2)
             full_state = self.query_state()
             self._state_label.value = self.state
+            if self.state == 'RUN':
+                self._emission_button.label = 'Laser On'
+                self._emission_button._form.setStyleSheet('QPushButton \
+                                                        {background-color: \
+                                                        #A3C1DA; color: red;}')
 
     def _stats_labels(self):
         self._diode1_hrs_label = ControlLabel('Diode 1 Hours: \
@@ -94,15 +99,31 @@ class InsightController(Insight, BaseWidget):
     def _main_shutter_control(self):
         if self.main_shutter == 0:
             self.main_shutter = 1
+            self._main_shutter_button.label = 'Main Shutter Open'
+            self._main_shutter_button._form.setStyleSheet('QPushButton \
+                                                        {background-color: \
+                                                        #A3C1DA; color: red;}')
         else:
             self.main_shutter = 0
+            self._main_shutter_button.label = 'Main Shutter Closed'
+            self._main_shutter_button._form.setStyleSheet('QPushButton \
+                                                        {background-color: \
+                                                        light gray; color: black;}')
         self._update_history()
 
     def _fixed_shutter_control(self):
         if self.main_shutter == 0:
             self.fixed_shutter = 1
+            self._fixed_shutter_button.label = '1040 nm Shutter Open'
+            self._fixed_shutter_button._form.setStyleSheet('QPushButton \
+                                                        {background-color: \
+                                                        #A3C1DA; color: red;}')
         else:
             self.fixed_shutter = 0
+            self._fixed_shutter_button.label = '1040 nm Shutter Closed'
+            self._fixed_shutter_button._form.setStyleSheet('QPushButton \
+                                                        {background-color: \
+                                                        light gray; color: black;}')
         self._update_history()
 
     def _update_history(self):

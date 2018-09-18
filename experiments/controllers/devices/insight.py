@@ -106,7 +106,7 @@ class Insight(Device):
         # Appendix B, where the codes are explained cites the correct code:
         # 'READ:AHIS?'
         try:
-            self.write(b'READ:HIStory?', self._com_time)
+            self.write(b'READ:AHIS?', self._com_time)
             codes = self.read().split(' ')
             string = ''
             for code in codes:
