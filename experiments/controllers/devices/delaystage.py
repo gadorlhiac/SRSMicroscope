@@ -94,6 +94,7 @@ class DelayStage(Device):
         # a value from -100 to 100 mm
         try:
             self.write(b'1OR', self._com_time)
+            tmp = self.read()
             self.check_errors()
         except PositionerError as e:
             self.last_action = 'Positioner Error: %s' % (e.msg)
@@ -106,6 +107,7 @@ class DelayStage(Device):
     def stop_motion(self):
         try:
             self.write(b'1ST', self._com_time)
+            tmp = self.read()
             if self._cmd_error != '@':
                 raise CommandError(self._cmd_error)
 
@@ -127,6 +129,7 @@ class DelayStage(Device):
     def disable(self):
         try:
             self.write(b'1MM0', self._com_time)
+            tmp = self.read()
             self.check_errors()
             self.last_action = 'Entered DISABLE state'
         except PositionerError as e:
@@ -140,6 +143,7 @@ class DelayStage(Device):
     def enable(self):
         try:
             self.write(b'1MM1', self._com_time)
+            tmp = self.read()
             self.check_errors()
             self.last_action = 'Entered READY state'
         except PositionerError as e:
@@ -149,7 +153,7 @@ class DelayStage(Device):
         except Exception as e:
             self.last_action = 'Unknown error. %s' % (str(e))
 
-    # Read last command error, and query stateto see if there are positioner
+    # Read last command error, and query state to see if there are positioner
     # errors
     def check_errors(self):
         self.write(b'1TE', self._com_time) # Last command error
@@ -191,6 +195,7 @@ class DelayStage(Device):
             t = float(self.read()[3:])
 
             self.write(b'1PA%f' % val, t + self._com_time)
+            tmp = self.read()
             self.check_errors()
 
             self.write(b'1TP?', self._com_time)
@@ -218,6 +223,7 @@ class DelayStage(Device):
     def vel(self, val):
         try:
             self.write(b'1VA%f' % val, self._com_time)
+            tmp = self.read()
             self.check_errors()
 
             self.write('1VA?', self._com_time)
@@ -246,6 +252,7 @@ class DelayStage(Device):
     def accel(self, val):
         try:
             self.write(b'1AC%f' % val, self._com_time)
+            tmp = self.read()
             self.check_errors()
 
             self.write(b'1AC?', self._com_time)
