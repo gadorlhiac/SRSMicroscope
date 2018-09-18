@@ -44,4 +44,4 @@ class Device(object):
         time.sleep(waittime)
 
     def read(self):
-        return self.com.readline()
+        return self.com.readline().decode('ascii')

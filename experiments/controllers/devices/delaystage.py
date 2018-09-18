@@ -165,8 +165,8 @@ class DelayStage(Device):
     def query_state(self):
         self.write(b'1TS', self._com_time)
         line = self.read()
-        self._pos_error = line[3:7].decode('ascii')
-        self._state = line[7:9].decode('ascii')
+        self._pos_error = line[3:7]
+        self._state = line[7:9]
 
     @property
     def state(self):
@@ -187,7 +187,7 @@ class DelayStage(Device):
         try:
             relative_move = np.abs(self._pos - val)
             self.write(b'1PT%f' % relative_move, self._com_time)
-            t = float(self.read()[3:])
+            t = float(self.read()[3:].decode('ascii'))
 
             self.write(b'1PA%f' % val, t + self._com_time)
             self.check_errors()
