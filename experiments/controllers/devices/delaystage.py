@@ -85,7 +85,8 @@ class DelayStage(Device):
         self._com_time = com_time # Wait time for read/write
         self._pos_error = '0000'
         self._cmd_error = '@'
-        self._pos = 0
+        self.write(b'1TP?', self._com_time)
+        self._pos = float(self.read()[3:])
         self._state = '0A'
 
     def home(self):
@@ -99,7 +100,7 @@ class DelayStage(Device):
         except CommandError as e:
             self.last_action = 'Command Error: %s' % (e.msg)
         except Exception as e:
-            self.last_action = 'Unknown error.'
+            self.last_action = 'Unknown error. %s' % (str(e))
 
     # Stop any motion
     def stop_motion(self):
@@ -120,7 +121,7 @@ class DelayStage(Device):
         except CommandError as e:
             self.last_action = 'Command Error: %s' % (e.msg)
         except Exception as e:
-            self.last_action = 'Unknown error.'
+            self.last_action = 'Unknown error. %s' % (str(e))
 
     # Enter DISABLE state
     def disable(self):
@@ -133,7 +134,7 @@ class DelayStage(Device):
         except CommandError as e:
             self.last_action = 'Command Error: %s' % (e.msg)
         except Exception as e:
-            self.last_action = 'Unknown error.'
+            self.last_action = 'Unknown error. %s' % (str(e))
 
     # Re-enter READY state
     def enable(self):
@@ -146,7 +147,7 @@ class DelayStage(Device):
         except CommandError as e:
             self.last_action = 'Command Error: %s' % (e.msg)
         except Exception as e:
-            self.last_action = 'Unknown error.'
+            self.last_action = 'Unknown error. %s' % (str(e))
 
     # Read last command error, and query stateto see if there are positioner
     # errors

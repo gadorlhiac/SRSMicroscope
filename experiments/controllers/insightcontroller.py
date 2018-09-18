@@ -149,6 +149,7 @@ class InsightController(Insight, BaseWidget):
         ('_main_wl_label'),
         ('_tune_wl_val','','_tune_wl_button'),
         ('', 'h5:Laser Statistics', ''),
+        ('', 'Laser State:', '_state_label', ''),
         ('_diode1_hrs_label', '', '_diode2_hrs_label'),
         ('_diode1_temp_label', '', '_diode2_temp_label'),
         ('_diode1_curr_label', '', '_diode2_curr_label'),

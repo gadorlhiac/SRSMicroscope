@@ -117,6 +117,7 @@ class Insight(Device):
             self.last_action = 'Unknown error. Check terminal.'
 
     def laser_hrs(self):
+        # Note: the READ:PLASer:DIODe1:HOURS? command in the manual is incorrect
         self.write(b'READ:PLASer:DIODe1:HOURS?', self._com_time)
         self.diode1_hrs = float(self.read().strip())
         self.write(b'READ:PLASer:DIODe2:HOURS?', self._com_time)

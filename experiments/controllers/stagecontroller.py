@@ -52,6 +52,7 @@ class StageController(DelayStage, BaseWidget):
         try:
             relmove = float(self._relmov_text.value)
             self.pos = (self.pos + relmove)
+            self._pos_label.value = '%f' % (self.pos)
             self._update_history()
         except TypeError and ValueError:
             self.last_action = 'Improper value entered for motion.'
@@ -61,6 +62,7 @@ class StageController(DelayStage, BaseWidget):
         try:
             relmove = -1*float(self._relmov_text.value)
             self.pos = (self.pos - relmove)
+            self._pos_label.value = '%f' % (self.pos)
             self._update_history()
         except TypeError and ValueError:
             self.last_action = 'Improper value entered for motion.'
