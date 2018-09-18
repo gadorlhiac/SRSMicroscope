@@ -165,8 +165,8 @@ class DelayStage(Device):
     def query_state(self):
         self.write(b'1TS', self._com_time)
         line = self.read()
-        self._pos_error = str(line[3:7].encode())
-        self._state = str(line[7:9].encode())
+        self._pos_error = line[3:7].decode('ascii')
+        self._state = line[7:9].decode('ascii')
 
     @property
     def state(self):
