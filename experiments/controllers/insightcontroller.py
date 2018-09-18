@@ -64,29 +64,29 @@ class InsightController(Insight, BaseWidget):
 
     def _stats_labels(self):
         self._diode1_hrs_label = ControlLabel('Diode 1 Hours: \
-                                                %f' % (self.diode1_hrs))
+                                                %s' % (self.diode1_hrs))
         self._diode2_hrs_label = ControlLabel('Diode 2 Hours: \
                                                 %s' % (self.diode2_hrs))
         self._diode1_temp_label = ControlLabel('Diode 1 Temperature: \
-                                                %f' % (self.diode1_temp))
+                                                %s' % (self.diode1_temp))
         self._diode2_temp_label = ControlLabel('Diode 2 Temperature: \
-                                                %f'  % (self.diode2_temp))
+                                                %s'  % (self.diode2_temp))
         self._diode1_curr_label = ControlLabel('Diode 1 Current: \
-                                                %f' % (self.diode1_curr))
+                                                %s' % (self.diode1_curr))
         self._diode2_curr_label = ControlLabel('Diode 2 Current: \
-                                                %f' % (self.diode2_curr))
+                                                %s' % (self.diode2_curr))
     # Don't need to bother updating hours
     def _update_stats_labels(self):
         while 1:
             time.sleep(60)
             self.laser_stats()
-            self._diode1_temp_label.value = 'Diode 1 Temperature: %f' % \
+            self._diode1_temp_label.value = 'Diode 1 Temperature: %s' % \
                                                             (self.diode1_temp)
-            self._diode2_temp_label.value = 'Diode 2 Temperature: %f' % \
+            self._diode2_temp_label.value = 'Diode 2 Temperature: %s' % \
                                                             (self.diode2_temp)
-            self._diode1_curr_label.value = 'Diode 1 Current: %f' % \
+            self._diode1_curr_label.value = 'Diode 1 Current: %s' % \
                                                             (self.diode1_curr)
-            self._diode2_curr_label.value = 'Diode 2 Current: %f' % \
+            self._diode2_curr_label.value = 'Diode 2 Current: %s' % \
                                                             (self.diode2_curr)
 
     def _emission(self):

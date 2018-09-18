@@ -119,23 +119,23 @@ class Insight(Device):
     def laser_hrs(self):
         # Note: the READ:PLASer:DIODe1:HOURS? command in the manual is incorrect
         self.write(b'READ:PLASer:DIODe1:HOURS?', self._com_time)
-        self.diode1_hrs = float(self.read().strip())
+        self.diode1_hrs = self.read().strip()
         self.write(b'READ:PLASer:DIODe2:HOURS?', self._com_time)
-        self.diode2_hrs = float(self.read().strip())
+        self.diode2_hrs = self.read().strip()
 
     def laser_stats(self):
         self.write(b'READ:PLASer:DIODe1:TEMPerature?', self._com_time)
-        self.diode1_temp = float(self.read().strip())
+        self.diode1_temp = self.read().strip()
         self.write(b'READ:PLASer:DIODe2:TEMPerature?', self._com_time)
-        self.diode2_temp = float(self.read().strip())
+        self.diode2_temp = self.read().strip()
 
         self.write(b'READ:HUMidity?', self._com_time)
-        self.humidity = float(self.read().strip())
+        self.humidity = self.read().strip()
 
         self.write(b'READ:PLASer:DIODe1:CURRent?', self._com_time)
-        self.diode1_curr = float(self.read().strip())
+        self.diode1_curr = self.read().strip()
         self.write(b'READ:PLASer:DIODe2:CURRent?', self._com_time)
-        self.diode2_curr = float(self.read().strip())
+        self.diode2_curr = self.read().strip()
 
     def turnon(self):
         try:
