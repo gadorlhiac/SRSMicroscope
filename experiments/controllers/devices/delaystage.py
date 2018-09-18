@@ -110,7 +110,7 @@ class DelayStage(Device):
                 raise CommandError(self._cmd_error)
 
             self.query_state()
-            if int(self._error, 16):
+            if int(self._pos_error, 16):
                raise PositionerError(self._pos_error)
 
             self.write(b'1TP?', self._com_time)
@@ -157,7 +157,7 @@ class DelayStage(Device):
         if self._cmd_error != '@':
             raise CommandError(self._cmd_error)
         self.query_state()
-        if int(self._error, 16):
+        if int(self._pos_error, 16):
             raise PositionerError(self._pos_error)
 
     # Gets the positioner state.  The output is a string with 6 characters such
