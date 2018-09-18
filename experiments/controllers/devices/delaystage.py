@@ -21,8 +21,9 @@ class PositionerError(Exception):
     """Exception for positioner error"""
     def __init__(self, error_code):
         mask = []
-        for b in map(int, list(error_code)):
-            mask.append(bool(b))
+        e = bin(int(error_code, 16))[2:].zfill(16)
+        for b in e:
+            mask.append(bool(int(b)))
 
         self.msg = ', '.join(self._pos_errors[mask])
 
@@ -50,11 +51,7 @@ class CommandError(Exception):
         'V' : 'Error during command execution.'
     }
     def __init__(self, error_code):
-        mask = []
-        for b in map(int, list(error_code)):
-            mask.append(bool(b))
-
-        self.msg = ', '.join(_cmd_errors[mask])
+        self.msg = self._cmd_errors[error_code]
 
     def __str__(self):
         return self.msg
