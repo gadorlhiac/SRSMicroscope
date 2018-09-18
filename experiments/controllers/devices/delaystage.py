@@ -24,7 +24,7 @@ class PositionerError(Exception):
         for b in map(int, list(error_code)):
             mask.append(bool(b))
 
-        self.msg = ', '.join(_positioner_errors[mask])
+        self.msg = ', '.join(_pos_errors[mask])
 
     def __str__(self):
         return self.msg
@@ -205,8 +205,8 @@ class DelayStage(Device):
             self.last_action = 'Position not moved! Command Error: %s' \
                                                                     % (e.msg)
         except Exception as e:
-            self.last_action = 'Position not moved! Unknown error. Check \
-                                                                    terminal.'
+            self.last_action = 'Position not moved! Unknown error. %s' \
+                                                                    % (str(e))
 
     ############################################################################
     # Velocity property and setter functions.
@@ -232,8 +232,8 @@ class DelayStage(Device):
            self.last_action = 'Velocity not changed! Command Error: %s' \
                                                                     % (e.msg)
         except Exception as e:
-            self.last_action = 'Velocity not changed! Unknown error. \
-                                                                Check terminal.'
+            self.last_action = 'Velocity not changed! Unknown error. %s' \
+                                                                    % (str(e))
 
     ############################################################################
     # Acceleration property and setter functions.
@@ -257,8 +257,8 @@ class DelayStage(Device):
            self.last_action = 'Acceleration not changed! Command Error: %s' \
                                                                     % (e.msg)
         except Exception as e:
-            self.last_action = 'Velocity not changed! Unknown error. \
-                                                                Check terminal.'
+            self.last_action = 'Velocity not changed! Unknown error. %s' \
+                                                                    % (str(e))
 
     ############################################################################
     # WARNING: Set home parameter, or other system parameters can only be done
