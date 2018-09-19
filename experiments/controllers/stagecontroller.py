@@ -99,7 +99,7 @@ class StageController(DelayStage, BaseWidget):
 
     def _movrev(self):
         try:
-            relmove = -1*float(mself._relmov_text.value)
+            relmove = -1*float(self._relmov_text.value)
             self.pos = (self.pos + relmove)
             self._pos_label.value = '%f' % (self.pos)
         except TypeError and ValueError:
