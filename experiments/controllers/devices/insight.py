@@ -70,10 +70,12 @@ class Insight(Device):
         self.diode2_hrs = ''
 
         # Initialize the values where needed
-        self.laser_hrs()
-        self.laser_stats()
         self.write(b'WAVelength?', self._com_time)
         self._opo_wl = int(self.read().strip())
+        time.sleep(self._com_time)
+        self.laser_hrs()
+        time.sleep(self._com_time)
+        self.laser_stats()
 
     # Read errors is same command as query state but separate functions to allow
     # flexibility in error handling

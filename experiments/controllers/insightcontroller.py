@@ -43,6 +43,7 @@ class InsightController(Insight, BaseWidget):
         self._code_history.readonly = True
         self._update_code_history()
 
+        # Layout and querying thread
         self._organization()
 
         self.queryThread = threading.Thread(target=self._insight_status)
@@ -65,7 +66,14 @@ class InsightController(Insight, BaseWidget):
             count += 1
             if count % 30 == 0: # Every 60 s
                 self.laser_stats()
-                self._stats_labels()
+                self._diode1_temp_label.value = 'Diode 1 Temperature: %s' % \
+                                                            (self.diode1_temp)
+                self._diode2_temp_label.value = 'Diode 2 Temperature: %s' % \
+                                                            (self.diode2_temp)
+                self._diode1_curr_label.value = 'Diode 1 Current: %s' % \
+                                                            (self.diode1_curr)
+                self._diode2_curr_label.value = 'Diode 2 Current: %s' % \
+                                                            (self.diode2_curr)
             elif count == 300:
                 self._update_code_history()
                 count = 1
