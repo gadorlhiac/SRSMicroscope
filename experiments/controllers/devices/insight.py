@@ -187,8 +187,7 @@ class Insight(Device):
     @opo_wl.setter
     def opo_wl(self, val):
         try:
-            print(b'WAVelength %s' % (val))
-            self.write(b'WAVelength %s' % (val), self._com_time)
+            self.write(b'WAVelength %i' % (val), self._com_time)
             self.check_errors()
             self.write(b'WAVelength?', self._com_time)
             if int(self.read()) != val:

@@ -91,19 +91,6 @@ class InsightController(Insight, BaseWidget):
                                                 %s' % (self.diode1_curr))
         self._diode2_curr_label = ControlLabel('Diode 2 Current: \
                                                 %s' % (self.diode2_curr))
-    # Don't need to bother updating hours
-    #def _update_stats_labels(self):
-    #    while 1:
-    #        time.sleep(60)
-    #        self.laser_stats()
-    #        self._diode1_temp_label.value = 'Diode 1 Temperature: %s' % \
-    #                                                        (self.diode1_temp)
-    #        self._diode2_temp_label.value = 'Diode 2 Temperature: %s' % \
-    #                                                        (self.diode2_temp)
-    #        self._diode1_curr_label.value = 'Diode 1 Current: %s' % \
-    #                                                        (self.diode1_curr)
-    #        self._diode2_curr_label.value = 'Diode 2 Current: %s' % \
-    #                                                        (self.diode2_curr)
 
     def _emission(self):
         if self._emission_button.label == 'Laser Off':
@@ -146,7 +133,7 @@ class InsightController(Insight, BaseWidget):
         self._update_history()
 
     def _tune_wl(self):
-        self.opo_wl = self._tune_wl_val.value
+        self.opo_wl = int(self._tune_wl_val.value)
         self._update_history()
 
     def _update_history(self):
