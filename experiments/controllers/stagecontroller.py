@@ -89,6 +89,7 @@ class StageController(DelayStage, BaseWidget):
     # Motion functions
     def _movfor(self):
         try:
+            print(float(self._relmov_text.value))
             relmove = float(self._relmov_text.value)
             self.pos = (self.pos + relmove)
             self._pos_label.value = '%f' % (self.pos)
@@ -99,6 +100,7 @@ class StageController(DelayStage, BaseWidget):
 
     def _movrev(self):
         try:
+            print(float(self._relmov_text.value))
             relmove = -1*float(self._relmov_text.value)
             self.pos = (self.pos + relmove)
             self._pos_label.value = '%f' % (self.pos)
@@ -109,7 +111,8 @@ class StageController(DelayStage, BaseWidget):
 
     def _absmov(self):
         try:
-            self.pos = float(mself._gotopos_text.value)
+            print(float(self._gotopos_text.value))
+            self.pos = float(self._gotopos_text.value)
             self._pos_label.value = '%f' % (self.pos)
         except TypeError and ValueError:
             self.last_action = 'Improper value entered for motion.'
