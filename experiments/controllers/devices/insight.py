@@ -196,7 +196,7 @@ class Insight(Device):
                 raise TuningError
 
             self._opo_wl = wl
-            self.last_action = 'Wavelength changed to: ' % (self._opo_wl)
+            self.last_action = 'Wavelength changed to: %i' % (self._opo_wl)
         except OperationError as e:
             self.last_action = e.msg
         except TuningError as e:
