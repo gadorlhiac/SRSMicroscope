@@ -112,6 +112,7 @@ class Insight(Device):
         try:
             self.write(b'READ:AHIS?', self._com_time)
             codes = self.read().split(' ')
+            print(codes)
             string = ''
             for code in codes:
                 string += '%s: %s\n' (code, self.fault_codes[code])
@@ -187,7 +188,7 @@ class Insight(Device):
     @opo_wl.setter
     def opo_wl(self, val):
         try:
-            print(val)
+            print(b'WAVelength %s' % (val))
             self.write(b'WAVelength %s' % (val), self._com_time)
             self.check_errors()
             self.write(b'WAVelength?', self._com_time)
