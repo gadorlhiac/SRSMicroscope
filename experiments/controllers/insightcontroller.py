@@ -145,6 +145,12 @@ class InsightController(Insight, BaseWidget):
                                                         light gray; color: black;}')
         self._update_history()
 
+    def _tune_wl(self):
+        s = self._tune_wl_val.value
+        print(s)
+        self.opo_wl = self._tune_wl_val.value
+        self._update_history()
+
     def _update_history(self):
         t = time.asctime(time.localtime())
         self._action_history += '%s: %s' % (t, self.last_action)
@@ -154,10 +160,6 @@ class InsightController(Insight, BaseWidget):
         string = self.read_history()
         self._code_history += 'Time of buffer reading: %s\n %s' \
                                                                 % (t, string)
-        #self._update_history()
-
-    def _tune_wl(self):
-        self.opo_wl = self._tune_wl_val.value
         self._update_history()
 
     def _organization(self):

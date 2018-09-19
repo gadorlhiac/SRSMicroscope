@@ -115,8 +115,9 @@ class Insight(Device):
             string = ''
             for code in codes:
                 string += '%s: %s\n' (code, self.fault_codes[code])
-            return string
+
             self.last_action = 'Read from history buffer.'
+            return string
         except Exception as e:
             self.last_action = 'Unknown error. %s' % (str(e))
 
@@ -209,7 +210,7 @@ class Insight(Device):
     def main_shutter(self, val):
         msg = ['closed.', 'opened.']
         try:
-            self.write(b'SHUTter %i' % val, self._com_time)
+            self.write(b'SHUTter %i' % (val), self._com_time)
             self.check_errors()
             self._main_shutter = val
             self.last_action = 'Main shutter %s' % (msg[val])
@@ -226,7 +227,7 @@ class Insight(Device):
     def fixed_shutter(self, val):
         msg = ['closed.', 'opened.']
         try:
-            self.write(b'IRSHUTter %i' % val, self._com_time)
+            self.write(b'IRSHUTter %i' % (val), self._com_time)
             self.check_errors()
             self._fixed_shutter = val
             self.last_action = 'Fixed shutter %s' % (msg[val])
