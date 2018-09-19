@@ -31,6 +31,7 @@ class BasicExperiment(BaseWidget):
         self._experiment_panel.parent = self
         self._test_button = ControlButton('Test')
         self._test_button.parent = self._experiment_panel
+        self._test_button.show()
 
         self._organization()
 
