@@ -3,7 +3,7 @@
 from .controllers.insightcontroller import *
 from .controllers.stagecontroller import *
 from .controllers.zidaqcontroller import *
-from pyforms.controls import ControlDir, ControlEmptyWidget
+from pyforms.controls import ControlButton, ControlEmptyWidget
 
 class BasicExperiment(BaseWidget):
     def __init__(self):
@@ -29,6 +29,8 @@ class BasicExperiment(BaseWidget):
         self._zidaq_panel.value = self.zidaq
 
         self._experiment_panel.parent = self
+        self._test_button = ControlButton('Test')
+        self._test_button.parent = self._experiment_panel
 
         self._organization()
 
