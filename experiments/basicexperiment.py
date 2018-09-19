@@ -30,7 +30,7 @@ class BasicExperiment(BaseWidget):
 
         self._experiment_panel.parent = self
         self._test_button = ControlButton('Test')
-        self._test_button.parent = self._experiment_panel
+        self._experiment_panel.value = self._test_button
 
         self._organization()
         self._experiment_organization()
