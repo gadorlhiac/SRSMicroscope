@@ -58,7 +58,7 @@ class BasicExperiment(BaseWidget):
             self.insight.tune_wl_button.click()
             self._calc_omega()
             self._omega_text.value = '%.2f' % (self.omega)
-            self._wl_label = ControlLabel('Main Wavelength: %s' \
+            self._wl_label.value = 'Main Wavelength: %s' \
                                                 % (str(self.insight.opo_wl)))
         except Exception as e:
             pass
