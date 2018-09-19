@@ -46,7 +46,7 @@ class BasicExperiment(BaseWidget):
 
         self._experiment_panel.value = [
             self._wl_label,
-            (self._omega_text, self._set_omega_button)]
+            self._omega_text, self._set_omega_button]
 
     def _set_omega(self):
         pass
