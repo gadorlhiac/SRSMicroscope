@@ -48,6 +48,9 @@ class BasicExperiment(BaseWidget):
             self._wl_label,
             (self._omega_text, self._set_omega_button)]
 
+    def _set_omega(self):
+        pass
+
     def _calc_omega(self):
         self.omega = (10000000./self.insight.opo_wl) - (10000000./1040.)
 
