@@ -208,7 +208,7 @@ class Insight(Device):
     def main_shutter(self, val):
         msg = ['closed.', 'opened.']
         try:
-            self.write(b'SHUTter %i' % val)
+            self.write(b'SHUTter %i' % val, self._com_time)
             self.check_errors()
             self._main_shutter = val
             self.last_action = 'Main shutter %s' % (msg[val])
@@ -225,7 +225,7 @@ class Insight(Device):
     def fixed_shutter(self, val):
         msg = ['closed.', 'opened.']
         try:
-            self.write(b'IRSHUTter %i' % val)
+            self.write(b'IRSHUTter %i' % val, self._com_time)
             self.check_errors()
             self._fixed_shutter = val
             self.last_action = 'Fixed shutter %s' % (msg[val])
