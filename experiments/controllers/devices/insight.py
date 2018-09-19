@@ -165,15 +165,15 @@ class Insight(Device):
             return self._states[0]
         elif self._state == 25:
             return self._states[1]
-        elif self._states < 50:
+        elif self._state < 50:
             return self._states[2]
-        elif self._states == 50:
+        elif self._state == 50:
             return self._states[3]
-        elif self._states < 60:
+        elif self._state < 60:
             return self._states[4]
-        elif self._states == 60:
+        elif self._state == 60:
             return self._states[5]
-        elif self._states < 70:
+        elif self._state < 70:
             return self._states[6]
         else:
             return self._states[7]
