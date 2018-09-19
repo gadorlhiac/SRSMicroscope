@@ -101,6 +101,8 @@ class Insight(Device):
             self.last_action = e.msg
         except Exception as e:
             self.last_action = 'Unknown error. %s' % (str(e))
+        finally:
+            return full_state
 
     def read_history(self):
         # Note: The Insight manual in the description of the serial commands
@@ -119,7 +121,6 @@ class Insight(Device):
             self.last_action = 'Unknown error. %s' % (str(e))
 
     def laser_hrs(self):
-        # Note: the READ:PLASer:DIODe1:HOURS? command in the manual is incorrect
         self.write(b'READ:PLASer:DIODe1:HOURS?', self._com_time)
         self.diode1_hrs = self.read().strip()
         self.write(b'READ:PLASer:DIODe2:HOURS?', self._com_time)
@@ -185,7 +186,7 @@ class Insight(Device):
     @opo_wl.setter
     def opo_wl(self, val):
         try:
-            self.write(b'WAVelength %s' % val, self._com_time)
+            self.write(b'WAVelength %s' % (val), self._com_time)
             self.check_errors()
             self.write(b'WAVelength?', self._com_time)
             if int(self.read()) != val:

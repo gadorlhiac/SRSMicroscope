@@ -56,7 +56,7 @@ class InsightController(Insight, BaseWidget):
         count = 1 # Counter to see if we should update stats or code history.
         while 1:
             time.sleep(2)
-            full_state = self.query_state()
+            full_state = self.check_errors()
             self._state_label.value = self.state
             if self.state == 'RUN':
                 self._emission_button.label = 'Laser On'
@@ -74,7 +74,7 @@ class InsightController(Insight, BaseWidget):
                                                             (self.diode1_curr)
                 self._diode2_curr_label.value = 'Diode 2 Current: %s' % \
                                                             (self.diode2_curr)
-            elif count == 300:
+            elif count == 60: # Every 120 s
                 self._update_code_history()
                 count = 1
 
@@ -110,6 +110,9 @@ class InsightController(Insight, BaseWidget):
             self.turnon()
         else:
             self.turnoff()
+            self._emission_button._form.setStyleSheet('QPushButton \
+                                                        {background-color: \
+                                                        light gray; color: black;}')
         self._update_history()
 
     def _main_shutter_control(self):
@@ -128,7 +131,7 @@ class InsightController(Insight, BaseWidget):
         self._update_history()
 
     def _fixed_shutter_control(self):
-        if self.main_shutter == 0:
+        if self.fixed_shutter == 0:
             self.fixed_shutter = 1
             self._fixed_shutter_button.label = '1040 nm Shutter Open'
             self._fixed_shutter_button._form.setStyleSheet('QPushButton \
