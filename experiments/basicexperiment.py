@@ -37,7 +37,8 @@ class BasicExperiment(BaseWidget):
 
     def _experiment_organization(self):
         self._experiment_panel.formset = [
-            ('_test_button')
+            ('Test',),
+                ('','_test_button','')
         ]
 
     def _organization(self):
