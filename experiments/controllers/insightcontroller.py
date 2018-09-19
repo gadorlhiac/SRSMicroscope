@@ -133,7 +133,7 @@ class InsightController(Insight, BaseWidget):
         self._update_history()
 
     def _tune_wl(self):
-        self.opo_wl = int(self._tune_wl_val.value)
+        self.opo_wl = int(self._tune_wl_val.value.strip())
         self._update_history()
 
     def _update_history(self):
