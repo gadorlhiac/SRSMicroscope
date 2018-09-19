@@ -10,6 +10,9 @@ class BasicExperiment(BaseWidget):
         BaseWidget.__init__(self)
         self.set_margin(10)
 
+        # Variables defined only for the experiment and not laser etc
+        self.omega = 1000 # Raman shift
+
         self._insight_panel = ControlEmptyWidget(margin=10)
         self._stage_panel = ControlEmptyWidget(margin=10, side='right')
         self._zidaq_panel = ControlEmptyWidget(margin=10)
@@ -19,7 +22,6 @@ class BasicExperiment(BaseWidget):
         self.insight.parent = self
         self._insight_panel.value = self.insight
 
-
         self.delaystage = StageController('COM7', 0.03)
         self.delaystage.parent = self
         self._stage_panel.value = self.delaystage
@@ -28,16 +30,29 @@ class BasicExperiment(BaseWidget):
         self.zidaq.parent = self
         self._zidaq_panel.value = self.zidaq
 
-        self._experiment_panel.parent = self
-        self._test_button = ControlButton('Test')
-        self._experiment_panel.value = self._test_button
-
+        # Organization and parameter initialization
+        self._calc_omega()
         self._organization()
-        self._experiment_organization()
+        #self._experiment_organization()
+        self._experiment_controls()
+
+    def _experiment_controls(self):
+        self._wl_label = ControlLabel('Main Wavelength: %s' \
+                                                % (str(self.insight.opo_wl)))
+        self._omega_text = ControlText(r'Raman Shift (cm$^{-1}$): %.2f' \
+                                                % (self.omega))
+        self._set_omega_button = ControlButton('Set Omega')
+        self._set_omega_button.value = self._set_omega
+
+        self._experiment_panel.value = [
+            self._wl_label,
+            (self._omega_text, self._set_omega_button)]
+
+    def _calc_omega(self):
+        self.omega = (10000000./self.insight.opo_wl) - (10000000./1040.)
 
     def _experiment_organization(self):
         self._experiment_panel.formset = [
-            ('Test',),
                 ('','_test_button','')
         ]
 
