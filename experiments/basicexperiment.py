@@ -57,6 +57,8 @@ class BasicExperiment(BaseWidget):
             self.insight.tune_wl_val.value = str(wl)
             self.insight.tune_wl_button.click()
             self._calc_omega()
+        except Exception as e:
+            pass
 
     def _calc_wl(self, omega):
         wl = ((10000000.)*1040.)/((1040.*omega)+10000000.)
