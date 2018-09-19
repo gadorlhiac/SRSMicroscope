@@ -39,8 +39,8 @@ class BasicExperiment(BaseWidget):
     def _experiment_controls(self):
         self._wl_label = ControlLabel('Main Wavelength: %s' \
                                                 % (str(self.insight.opo_wl)))
-        self._omega_text = ControlText(r'Raman Shift (cm$^{-1}$): %.2f' \
-                                                % (self.omega))
+        self._omega_text = ControlText('Raman Shift (cm-1):')
+        self._omega_text.value = '%.2f' % (self.omega)
         self._set_omega_button = ControlButton('Set Omega')
         self._set_omega_button.value = self._set_omega
 
