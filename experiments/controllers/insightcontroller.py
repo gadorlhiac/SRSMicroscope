@@ -35,8 +35,8 @@ class InsightController(Insight, BaseWidget):
         # Action and error log
         self._action_history = ControlTextArea('Action and Error Log')
         self._action_history.readonly = True
-        self._update_history()
         self._state_label = ControlLabel('%s' % (self.state))
+        self._update_history()
 
         # Stored buffer with fault codes
         self._code_history = ControlTextArea('Status Buffer History')
@@ -48,10 +48,11 @@ class InsightController(Insight, BaseWidget):
         self.queryThread = threading.Thread(target=self._insight_status)
         self.queryThread.start()
 
-        self.statsThread = threading.Thread(target=self._update_stats_labels)
-        self.statsThread.start()
+        #self.statsThread = threading.Thread(target=self._update_stats_labels)
+        #self.statsThread.start()
 
     def _insight_status(self):
+        count = 1 # Counter to see if we should update stats or code history.
         while 1:
             time.sleep(2)
             full_state = self.query_state()
@@ -61,6 +62,13 @@ class InsightController(Insight, BaseWidget):
                 self._emission_button._form.setStyleSheet('QPushButton \
                                                         {background-color: \
                                                         #A3C1DA; color: red;}')
+            count += 1
+            if count % 30 == 0: # Every 60 s
+                self.laser_stats()
+                self._stats_labels()
+            elif count == 300:
+                self._update_code_history()
+                count = 1
 
     def _stats_labels(self):
         self._diode1_hrs_label = ControlLabel('Diode 1 Hours: \
@@ -76,18 +84,18 @@ class InsightController(Insight, BaseWidget):
         self._diode2_curr_label = ControlLabel('Diode 2 Current: \
                                                 %s' % (self.diode2_curr))
     # Don't need to bother updating hours
-    def _update_stats_labels(self):
-        while 1:
-            time.sleep(60)
-            self.laser_stats()
-            self._diode1_temp_label.value = 'Diode 1 Temperature: %s' % \
-                                                            (self.diode1_temp)
-            self._diode2_temp_label.value = 'Diode 2 Temperature: %s' % \
-                                                            (self.diode2_temp)
-            self._diode1_curr_label.value = 'Diode 1 Current: %s' % \
-                                                            (self.diode1_curr)
-            self._diode2_curr_label.value = 'Diode 2 Current: %s' % \
-                                                            (self.diode2_curr)
+    #def _update_stats_labels(self):
+    #    while 1:
+    #        time.sleep(60)
+    #        self.laser_stats()
+    #        self._diode1_temp_label.value = 'Diode 1 Temperature: %s' % \
+    #                                                        (self.diode1_temp)
+    #        self._diode2_temp_label.value = 'Diode 2 Temperature: %s' % \
+    #                                                        (self.diode2_temp)
+    #        self._diode1_curr_label.value = 'Diode 1 Current: %s' % \
+    #                                                        (self.diode1_curr)
+    #        self._diode2_curr_label.value = 'Diode 2 Current: %s' % \
+    #                                                        (self.diode2_curr)
 
     def _emission(self):
         if self._emission_button.label == 'Laser Off':
@@ -135,7 +143,7 @@ class InsightController(Insight, BaseWidget):
         string = self.read_history()
         self._code_history += 'Time of buffer reading: %s\n %s' \
                                                                 % (t, string)
-        self._update_history()
+        #self._update_history()
 
     def _tune_wl(self):
         self.opo_wl = self._tune_wl_val.value

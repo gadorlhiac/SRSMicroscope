@@ -49,7 +49,7 @@ class Insight(Device):
             '482': 'Fault: Low fs osc power. Contact S-P.',
             '483': 'Fault: low FTO power. Try different wavelengths. Contact S-P.'}
         # Variables
-        ######################################################################
+        #######################################################################
         # Not intended to be accessed directly, only through properties
         self._com_time = com_time
         self._state = 0
@@ -73,7 +73,7 @@ class Insight(Device):
         self.laser_hrs()
         self.laser_stats()
         self.write(b'WAVelength?', self._com_time)
-        self._opo_wl = self.read()
+        self._opo_wl = float(self.read().strip())
 
     # Read errors is same command as query state but separate functions to allow
     # flexibility in error handling
