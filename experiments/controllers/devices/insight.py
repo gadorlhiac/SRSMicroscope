@@ -73,7 +73,7 @@ class Insight(Device):
         self.laser_hrs()
         self.laser_stats()
         self.write(b'WAVelength?', self._com_time)
-        self._opo_wl = float(self.read().strip())
+        self._opo_wl = int(self.read().strip())
 
     # Read errors is same command as query state but separate functions to allow
     # flexibility in error handling
@@ -183,13 +183,13 @@ class Insight(Device):
     @opo_wl.setter
     def opo_wl(self, val):
         try:
-            self.write(b'WAVelength %i' % val, self._com_time)
+            self.write(b'WAVelength %s' % val, self._com_time)
             self.check_errors()
             self.write(b'WAVelength?', self._com_time)
             if int(self.read()) != val:
                 raise TuningError
 
-            self._opo_wl = int(self.read())
+            self._opo_wl = int(self.read().strip())
             self.last_action = 'Wavelength changed to: ' % (self._opo_wl)
         except OperationError as e:
             self.last_action = e.msg
