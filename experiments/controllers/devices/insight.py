@@ -190,10 +190,12 @@ class Insight(Device):
             self.write(b'WAVelength %i' % (val), self._com_time + 2)
             self.check_errors()
             self.write(b'WAVelength?', self._com_time)
-            if int(self.read()) != val:
+
+            wl = int(self.read().strip())
+            if wl != val:
                 raise TuningError
 
-            self._opo_wl = int(self.read().strip())
+            self._opo_wl = wl
             self.last_action = 'Wavelength changed to: ' % (self._opo_wl)
         except OperationError as e:
             self.last_action = e.msg
