@@ -31,9 +31,14 @@ class BasicExperiment(BaseWidget):
         self._experiment_panel.parent = self
         self._test_button = ControlButton('Test')
         self._test_button.parent = self._experiment_panel
-        self._test_button.show()
 
         self._organization()
+        self._experiment_organization()
+
+    def _experiment_organization(self):
+        self._experiment_panel.formset = [
+            ('_test_button')
+        ]
 
     def _organization(self):
         self.formset = [{
