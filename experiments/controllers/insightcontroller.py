@@ -136,7 +136,7 @@ class InsightController(Insight, BaseWidget):
         self.opo_wl = int(self._tune_wl_val.value.strip())
         self._update_history()
         self._main_wl_label.value = 'Main Wavelength (nm): %s' \
-                                                            % str(self.opo_wl))
+                                                            % (str(self.opo_wl))
 
     def _update_history(self):
         t = time.asctime(time.localtime())
