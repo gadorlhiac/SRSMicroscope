@@ -43,7 +43,7 @@ class StageController(DelayStage, BaseWidget):
         self._accel_button = ControlButton('Set')
         self._accel_button.value = self._set_accel
         self._accel_text = ControlText('Set acceleration:')
-        self._accel_label = ControlLabel('%f' % (self.vel))
+        self._accel_label = ControlLabel('%f' % (self.accel))
 
         # Activity log
         self._action_history = ControlTextArea('Action and Error Log')

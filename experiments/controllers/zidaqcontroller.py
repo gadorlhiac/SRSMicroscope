@@ -31,12 +31,10 @@ class ziDAQController(ziDAQ, BaseWidget):
         # Action and error log
         self._action_history = ControlTextArea('Action and Error Log')
         self._action_history.readonly = True
-        self._update_history()
 
         self._organization()
         self.scopeThread = threading.Thread(target=self._plot_scope, args=[0])
         self.scopeThread.start()
-        self._update_history()
 
         self.monitorThread = threading.Thread(target=self._monitor)
         self.monitorThread.start()

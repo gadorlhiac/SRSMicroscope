@@ -266,7 +266,7 @@ class DelayStage(Device):
         self._accel = float(self.read()[3:])
         return self._accel
 
-    @property
+    @accel.setter
     def accel(self, val):
         try:
             self.write(b'1AC%f' % val, self._com_time)

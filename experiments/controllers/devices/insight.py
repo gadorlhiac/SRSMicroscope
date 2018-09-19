@@ -98,7 +98,7 @@ class Insight(Device):
         except OperationError as e:
             self.last_action = e.msg
         except Exception as e:
-            self.last_action = 'Unknown error. Check terminal.'
+            self.last_action = 'Unknown error. %s' % (str(e))
 
     def read_history(self):
         # Note: The Insight manual in the description of the serial commands
@@ -114,7 +114,7 @@ class Insight(Device):
             return string
             self.last_action = 'Read from history buffer.'
         except Exception as e:
-            self.last_action = 'Unknown error. Check terminal.'
+            self.last_action = 'Unknown error. %s' % (str(e))
 
     def laser_hrs(self):
         # Note: the READ:PLASer:DIODe1:HOURS? command in the manual is incorrect
@@ -145,7 +145,7 @@ class Insight(Device):
         except OperationError as e:
             self.last_action = e.msg
         except Exception as e:
-            self.last_action = 'Unknown error. Check terminal.'
+            self.last_action = 'Unknown error. %s' % (str(e))
 
     def turnoff(self):
         try:
@@ -155,7 +155,7 @@ class Insight(Device):
         except OperationError as e:
             self.last_action = e.msg
         except Exception as e:
-            self.last_action = 'Unknown error. Check terminal.'
+            self.last_action = 'Unknown error. %s' % (str(e))
 
     @property
     def state(self):
@@ -196,7 +196,7 @@ class Insight(Device):
         except TuningError as e:
             self.last_action = e.msg
         except Exception as e:
-            self.last_action = 'Unknown error. Check terminal.'
+            self.last_action = 'Unknown error. %s' % (str(e))
 
     @property
     def main_shutter(self):
@@ -213,7 +213,7 @@ class Insight(Device):
         except OperationError as e:
             self.last_action = e.msg
         except Exception as e:
-            self.last_action = 'Unknown error. Check terminal.'
+            self.last_action = 'Unknown error. %s' % (str(e))
 
     @property
     def fixed_shutter(self):
@@ -230,7 +230,7 @@ class Insight(Device):
         except OperationError as e:
             self.last_action = e.msg
         except Exception as e:
-            self.last_action = 'Unknown error. Check terminal.'
+            self.last_action = 'Unknown error. %s' % (str(e))
 
 
     # Need deepsee stuff
