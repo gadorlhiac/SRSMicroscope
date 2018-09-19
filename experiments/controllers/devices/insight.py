@@ -112,15 +112,14 @@ class Insight(Device):
         try:
             self.write(b'READ:AHIS?', self._com_time)
             codes = self.read().strip().split(' ')
-            print(codes)
-            string = ''
+            s = ''
             for code in codes:
                 print(code)
                 print(self.fault_codes[code])
-                string += '%s: %s\n' (code, self.fault_codes[code])
+                s += '%s: %s\n' (code, self.fault_codes[code])
 
             self.last_action = 'Read from history buffer.'
-            return string
+            return s
         except Exception as e:
             self.last_action = 'Read history. %s' % (str(e))
 
