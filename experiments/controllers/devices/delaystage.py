@@ -207,7 +207,9 @@ class DelayStage(Device):
         try:
             relative_move = val - self._pos
             self.write(b'1PT%f' % relative_move, self._com_time)
-            t = float(self.read()[3:])
+            t = self.read()[3:]
+            print(t)
+            t = float(t)
 
             self.write(b'1PA%f' % val, t + self._com_time)
             tmp = self.read()
