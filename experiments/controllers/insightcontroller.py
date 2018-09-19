@@ -64,7 +64,7 @@ class InsightController(Insight, BaseWidget):
                                                         {background-color: \
                                                         #A3C1DA; color: red;}')
             count += 1
-            if count % 30 == 0: # Every 60 s
+            if count % 15 == 0: # Every 60 s
                 self.laser_stats()
                 self._diode1_temp_label.value = 'Diode 1 Temperature: %s' % \
                                                             (self.diode1_temp)
@@ -74,7 +74,7 @@ class InsightController(Insight, BaseWidget):
                                                             (self.diode1_curr)
                 self._diode2_curr_label.value = 'Diode 2 Current: %s' % \
                                                             (self.diode2_curr)
-            elif count == 60: # Every 120 s
+            elif count == 15: # Every 120 s
                 self._update_code_history()
                 count = 1
 
@@ -146,8 +146,6 @@ class InsightController(Insight, BaseWidget):
         self._update_history()
 
     def _tune_wl(self):
-        s = self._tune_wl_val.value
-        print(s)
         self.opo_wl = self._tune_wl_val.value
         self._update_history()
 

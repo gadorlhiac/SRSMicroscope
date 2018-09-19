@@ -100,7 +100,7 @@ class Insight(Device):
         except OperationError as e:
             self.last_action = e.msg
         except Exception as e:
-            self.last_action = 'Unknown error. %s' % (str(e))
+            self.last_action = 'check errors. %s' % (str(e))
         finally:
             return full_state
 
@@ -119,7 +119,7 @@ class Insight(Device):
             self.last_action = 'Read from history buffer.'
             return string
         except Exception as e:
-            self.last_action = 'Unknown error. %s' % (str(e))
+            self.last_action = 'Read history. %s' % (str(e))
 
     def laser_hrs(self):
         self.write(b'READ:PLASer:DIODe1:HOURS?', self._com_time)
@@ -149,7 +149,7 @@ class Insight(Device):
         except OperationError as e:
             self.last_action = e.msg
         except Exception as e:
-            self.last_action = 'Unknown error. %s' % (str(e))
+            self.last_action = 'turnon. %s' % (str(e))
 
     def turnoff(self):
         try:
@@ -159,7 +159,7 @@ class Insight(Device):
         except OperationError as e:
             self.last_action = e.msg
         except Exception as e:
-            self.last_action = 'Unknown error. %s' % (str(e))
+            self.last_action = 'turnoff. %s' % (str(e))
 
     @property
     def state(self):
@@ -187,6 +187,7 @@ class Insight(Device):
     @opo_wl.setter
     def opo_wl(self, val):
         try:
+            print(val)
             self.write(b'WAVelength %s' % (val), self._com_time)
             self.check_errors()
             self.write(b'WAVelength?', self._com_time)
@@ -200,7 +201,7 @@ class Insight(Device):
         except TuningError as e:
             self.last_action = e.msg
         except Exception as e:
-            self.last_action = 'Unknown error. %s' % (str(e))
+            self.last_action = 'Opo_wl setter. %s' % (str(e))
 
     @property
     def main_shutter(self):
@@ -217,7 +218,7 @@ class Insight(Device):
         except OperationError as e:
             self.last_action = e.msg
         except Exception as e:
-            self.last_action = 'Unknown error. %s' % (str(e))
+            self.last_action = 'Main shutter setter. %s' % (str(e))
 
     @property
     def fixed_shutter(self):
@@ -234,7 +235,7 @@ class Insight(Device):
         except OperationError as e:
             self.last_action = e.msg
         except Exception as e:
-            self.last_action = 'Unknown error. %s' % (str(e))
+            self.last_action = 'Fixed shutter setter. %s' % (str(e))
 
 
     # Need deepsee stuff
