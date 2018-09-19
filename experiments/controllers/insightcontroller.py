@@ -25,9 +25,9 @@ class InsightController(Insight, BaseWidget):
         # OPO Tuning
         self._main_wl_label = ControlLabel('Main Wavelength (nm): %s' \
                                                             % str(self.opo_wl))
-        self._tune_wl_val = ControlText('Set Wavelength (nm):')
-        self._tune_wl_button = ControlButton('Set')
-        self._tune_wl_button.value = self._tune_wl
+        self.tune_wl_val = ControlText('Set Wavelength (nm):')
+        self.tune_wl_button = ControlButton('Set')
+        self.tune_wl_button.value = self._tune_wl
 
         # Define statistics displays
         self._stats_labels()

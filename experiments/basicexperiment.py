@@ -48,11 +48,19 @@ class BasicExperiment(BaseWidget):
             self._wl_label,
             self._omega_text, self._set_omega_button]
 
-    def _set_omega(self):
-        pass
-
     def _calc_omega(self):
         self.omega = (10000000./self.insight.opo_wl) - (10000000./1040.)
+
+    def _set_omega(self):
+        try:
+            wl = self._calc_wl(float(self._omega_text.value))
+            self.insight.tune_wl_val.value = str(wl)
+            self.insight.tune_wl_button.click()
+            self._calc_omega()
+
+    def _calc_wl(self, omega):
+        wl = ((10000000.)*1040.)/((1040.*omega)+10000000.)
+        return int(round(wl))
 
     def _experiment_organization(self):
         self._experiment_panel.formset = [
