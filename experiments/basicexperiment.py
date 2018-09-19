@@ -25,7 +25,7 @@ class BasicExperiment(BaseWidget):
         self._stage_panel.value = self.delaystage
 
         self.zidaq = ziDAQController()
-        self._zidaq_panel.parent = self
+        self._zidaq.parent = self
         self._zidaq_panel.value = self.zidaq
 
         self._experiment_panel.parent = self
