@@ -24,9 +24,9 @@ class StageController(DelayStage, BaseWidget):
 
         # Motion widgets
         self._pos_label = ControlLabel('%f' % (self.pos))
-        self._gotopos_text = ControlText('Move to position:')
-        self._absmov_button = ControlButton('>')
-        self._absmov_button.value = self._absmov
+        self.gotopos_text = ControlText('Move to position:')
+        self.absmov_button = ControlButton('>')
+        self.absmov_button.value = self._absmov
 
         self._movfor_button = ControlButton('>>')
         self._movfor_button.value = self._movfor
@@ -109,7 +109,7 @@ class StageController(DelayStage, BaseWidget):
 
     def _absmov(self):
         try:
-            self.pos = float(self._gotopos_text.value)
+            self.pos = float(self.gotopos_text.value)
             self._pos_label.value = '%f' % (self.pos)
         except TypeError and ValueError:
             self.last_action = 'Improper value entered for motion.'
@@ -148,7 +148,7 @@ class StageController(DelayStage, BaseWidget):
         ('', 'h5:Delay Stage Operation', ''),
         ('_home_button', '', '_disable_button', '','_enable_button'),
         ('', 'Current Position (mm):', '_pos_label'),
-        ('_gotopos_text', '', '_absmov_button'),
+        ('gotopos_text', '', 'absmov_button'),
         ('Make a relative move (mm)'),
         ('_movrev_button', '', '_relmov_text', '', '_movfor_button'),
         ('', '', ''),
