@@ -3,6 +3,7 @@
 from .controllers.insightcontroller import *
 from .controllers.stagecontroller import *
 from .controllers.zidaqcontroller import *
+from .controllers.gui.alertwindow import *
 from pyforms.controls import ControlButton, ControlEmptyWidget
 import json
 
@@ -39,6 +40,9 @@ class BasicExperiment(BaseWidget):
         self.zidaq.parent = self
         self._zidaq_panel.value = self.zidaq
 
+        self._experiment_history = ControlTextArea('Experiment Log')
+        self._experiment_history.readonly = True
+
         # Organization and parameter initialization
         self._calc_omega()
         self._load_calibration()
@@ -55,9 +59,12 @@ class BasicExperiment(BaseWidget):
         self._set_omega_button = ControlButton('Set Omega')
         self._set_omega_button.value = self._set_omega
 
-        self._experiment_panel.value = [
-            self._wl_label,
-            self._omega_text, self._set_omega_button]
+        self._experiment_panel.value = [ self._wl_label,
+                                    self._omega_text, self._set_omega_button]
+
+    def _update_history(self):
+        t = time.asctime(time.localtime())
+        self._experiment_history += '%s: %s' % (t, self.last_action)
 
     def _calc_omega(self):
         self.omega = (10000000./self.insight.opo_wl) - (10000000./1040.)
@@ -80,8 +87,8 @@ class BasicExperiment(BaseWidget):
             self.delaystage.gotopos_text.value = str(move)
             self.delaystage.absmov_button.click()
         except KeyError as e:
-            # Change to pop up error window
-            print('No delay stage calibration data for this wavelength')
+            alert = AlertWindow('Alert',
+                        'No delay stage calibration data for this wavelength')
         except Exception as e:
             pass
 
@@ -92,14 +99,12 @@ class BasicExperiment(BaseWidget):
     def _load_calibration(self):
         try:
             with open('t0_calibration.json') as f:
-                # dict = json.dumps(dict)
                 tmp = ''
                 for line in f:
                     tmp += line
                 self.t0_dict = json.loads(tmp)
         except FileNotFoundError as e:
-            # Change to pop up window and include information on how to address
-            print('Time zero calibration file not found')
+            alert = AlertWindow('Alert', 'Time zero calibration file not found')
 
     def _optimize(self):
         # Optimize lockin signal as a function of a delay for the current wl
@@ -109,7 +114,8 @@ class BasicExperiment(BaseWidget):
         # Add warning that calibration requires a standard sample
         # Need to decide what that is? KDP SFG with some filters on lockin?
         # Otherwise can use optimize function to maximize signal for 1 wl
-        # This function will call optimize for multiple samples
+        # This function will call optimize for multiple wavelengths
+        # dict = json.dumps(dict)
         pass
 
     def _experiment_organization(self):
