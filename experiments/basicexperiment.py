@@ -6,13 +6,12 @@ from .controllers.zidaqcontroller import *
 from .controllers.gui.alertwindow import *
 from pyforms.controls import ControlButton, ControlEmptyWidget
 import json
+import time
 
 # Todo: add a calibration routine which finds t0 vs wavelength and saves the
 # output to a json which will be searched for.  If not present, can opt to
 # maximize signal at the wavelength chosen or user manually steps using the
 # delay stage themselves
-# Could maybe also add a separate experiment log for the particular errors here
-# which could also serve to record things like objective etc...
 
 class BasicExperiment(BaseWidget):
     def __init__(self):
@@ -26,7 +25,7 @@ class BasicExperiment(BaseWidget):
         self._insight_panel = ControlEmptyWidget(margin=10)
         self._stage_panel = ControlEmptyWidget(margin=10, side='right')
         self._zidaq_panel = ControlEmptyWidget(margin=10)
-        self._experiment_panel = ControlEmptyWidget(margin=10)
+        self._expmt_panel = ControlEmptyWidget(margin=10)
 
         self.insight = InsightController('COM6', 0.07)
         self.insight.parent = self
@@ -40,18 +39,18 @@ class BasicExperiment(BaseWidget):
         self.zidaq.parent = self
         self._zidaq_panel.value = self.zidaq
 
-        self._experiment_history = ControlTextArea('Experiment Log')
-        self._experiment_history.readonly = True
+        self.expmt_history = ControlTextArea('Experiment Log')
+        self.expmt_history.readonly = True
 
         # Organization and parameter initialization
         self._calc_omega()
         self._load_calibration()
 
-        self._experiment_controls()
+        self._expmt_controls()
         self._organization()
-        #self._experiment_organization()
+        #self._expmt_organization()
 
-    def _experiment_controls(self):
+    def _expmt_controls(self):
         self._wl_label = ControlLabel('Main Wavelength: %s' \
                                                 % (str(self.insight.opo_wl)))
         self._omega_text = ControlText('Raman Shift (cm-1):')
@@ -59,12 +58,23 @@ class BasicExperiment(BaseWidget):
         self._set_omega_button = ControlButton('Set Omega')
         self._set_omega_button.value = self._set_omega
 
-        self._experiment_panel.value = [ self._wl_label,
-                                    self._omega_text, self._set_omega_button]
+        self._expmt_panel.value = [ self._wl_label,
+                                    self._omega_text, self._set_omega_button,
+                                    self.expmt_history]
 
-    def _update_history(self):
+        self.mainmenu = [
+        { 'File': [
+                {'Save as': self.save_window, 'icon': 'path-to-image.png'},
+                {'Open as': self.load_window, 'icon': QtGui.QIcon('path-to-image.png')},
+                '-',
+                {'Exit': self.__exit},
+            ]
+        }
+    ]
+
+    def _update_history(self, msg):
         t = time.asctime(time.localtime())
-        self._experiment_history += '%s: %s' % (t, self.last_action)
+        self.expmt_history += '%s: %s' % (t, msg)
 
     def _calc_omega(self):
         self.omega = (10000000./self.insight.opo_wl) - (10000000./1040.)
@@ -87,10 +97,13 @@ class BasicExperiment(BaseWidget):
             self.delaystage.gotopos_text.value = str(move)
             self.delaystage.absmov_button.click()
         except KeyError as e:
-            alert = AlertWindow('Alert',
-                        'No delay stage calibration data for this wavelength')
+            msg = 'No delay stage calibration for %i nm' % (wl)
+            alert = AlertWindow('Alert', msg)
+            self._update_history(msg)
         except Exception as e:
-            pass
+            msg = str(e)
+            alert = AlertWindow('Alert', msg)
+            self._update_history(msg)
 
     def _calc_wl(self, omega):
         wl = ((10000000.)*1040.)/((1040.*omega)+10000000.)
@@ -104,7 +117,9 @@ class BasicExperiment(BaseWidget):
                     tmp += line
                 self.t0_dict = json.loads(tmp)
         except FileNotFoundError as e:
-            alert = AlertWindow('Alert', 'Time zero calibration file not found')
+            msg = 'No time zero calibration found'
+            alert = AlertWindow('Alert', msg)
+            self._update_history(msg)
 
     def _optimize(self):
         # Optimize lockin signal as a function of a delay for the current wl
@@ -118,14 +133,14 @@ class BasicExperiment(BaseWidget):
         # dict = json.dumps(dict)
         pass
 
-    def _experiment_organization(self):
-        self._experiment_panel.formset = [
+    def _expmt_organization(self):
+        self._expmt_panel.formset = [
                 ('','_test_button','')
         ]
 
     def _organization(self):
         self.formset = [{
-            'Experiment Control: SRS (fs)': ['_experiment_panel'],
+            'Experiment Control: SRS (fs)': ['_expmt_panel'],
             'Laser and Delay Stage Controls': [('_insight_panel', '||', '_stage_panel')],
             'ZI Lock-in Controls': ['_zidaq_panel'],
         }]

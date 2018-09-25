@@ -3,6 +3,7 @@
 from experiments.basicexperiment import *
 from experiments.controllers.gui.ControlCombo import *
 from pyforms.controls import ControlDir, ControlDockWidget
+import time
 
 class DirError(Exception):
     """Exception for positioner error"""
@@ -55,6 +56,8 @@ class SRSMicroscope(BaseWidget):
         self._expmt_panel = ControlEmptyWidget()
         self._expmt_panel.hide()
 
+        self.mainmenu = [ { 'File' : [ { 'Save' : self.save } ] } ]
+
     def _new_experiment(self):
         try:
             if self._selector.dir == '':
@@ -73,5 +76,13 @@ class SRSMicroscope(BaseWidget):
             print(e)
         except ExpmtError as e:
             print(e)
+
+    def save(self):
+        tmp = time.localtime()[0:3]
+        date = '%i-%i-%i' % (tmp[0], tmp[1], tmp[2])
+        with open('%s/%s_ExpmtLog' % (self._selector.dir, date), 'w') as f:
+            f.write(self.expmt.expmt_history.value)
+
+
 
 if __name__ == "__main__" : pyforms.start_app(SRSMicroscope)
