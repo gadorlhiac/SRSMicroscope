@@ -50,6 +50,8 @@ class BasicExperiment(BaseWidget):
         self._organization()
         #self._expmt_organization()
 
+        self._optimize()
+
     def _expmt_controls(self):
         self._wl_label = ControlLabel('Main Wavelength: %s' \
                                                 % (str(self.insight.opo_wl)))
@@ -123,7 +125,24 @@ class BasicExperiment(BaseWidget):
 
     def _optimize(self):
         # Optimize lockin signal as a function of a delay for the current wl
-        pass
+        pos = self.delaystage.pos
+        test = np.linspace(pos - .2, pos + .2, 200)
+        self.delaystage.gotopos_text.value = str(test[0])
+        self.delaystage.absmov_button.click()
+
+        r = np.zeros([len(test)])
+        for p, i in enumerate(test):
+            self.delaystage.gotopos_text.value = str(p)
+            self.delaystage.absmov_button.click()
+            time.sleep(.01)
+            x, y = self.zidaq.poll()
+            r[i] = np.mean((x**2 + y**2)**0.5)
+
+        self.delaystage.gotopos_text.value = str(pos)
+        self.delaystage.absmov_button.click()
+
+        plt.plot(test, r, 'o')
+        plt.show()
 
     def _calibrate(self):
         # Add warning that calibration requires a standard sample

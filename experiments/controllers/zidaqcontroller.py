@@ -26,15 +26,15 @@ class ziDAQController(ziDAQ, BaseWidget):
         self._sigout_sele += ('Siginal Output 1', 0)
         self._sigout_sele += ('Siginal Output 2', 1)
 
-        self._scope_viewer = ControlMatplotlib(default=self.scope)
+        #self._scope_viewer = ControlMatplotlib(default=self.scope)
 
         # Action and error log
         self._action_history = ControlTextArea('Action and Error Log')
         self._action_history.readonly = True
 
         self._organization()
-        self.scopeThread = threading.Thread(target=self._plot_scope, args=[0])
-        self.scopeThread.start()
+        #self.scopeThread = threading.Thread(target=self._plot_scope, args=[0])
+        #self.scopeThread.start()
 
         self.monitorThread = threading.Thread(target=self._monitor)
         self.monitorThread.start()
@@ -66,11 +66,8 @@ class ziDAQController(ziDAQ, BaseWidget):
         self.formset = [
         ('', 'h5:Connection Selectors', ''),
         ('_sigin_sele', '', '_sigout_sele'),
-        ('', 'h5:Oscilloscope Trace', ''),
-        ('', '_scope_viewer', ''),
+        #('', 'h5:Oscilloscope Trace', ''),
+        #('', '_scope_viewer', ''),
         ('', 'h5:Logs', ''),
         ('_action_history')
         ]
-
-
-#if __name__ == "__main__" : pyforms.start_app(ziDAQController)

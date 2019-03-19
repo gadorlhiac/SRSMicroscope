@@ -97,6 +97,7 @@ class InsightController(Insight, BaseWidget):
             self.turnon()
         else:
             self.turnoff()
+            self._emission_button.label = 'Laser Off'
             self._emission_button._form.setStyleSheet('QPushButton \
                                                         {background-color: \
                                                         light gray; color: black;}')
