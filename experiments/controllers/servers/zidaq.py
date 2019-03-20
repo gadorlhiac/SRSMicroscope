@@ -34,6 +34,8 @@ class ziDAQ(object):
             self.server.set(settings)
             self.server.sync()
 
+            self._get_config()
+
             self.last_action = 'Lockin found, %s' % (msg)
         except Exception as e:
             self.last_action = str(e)
@@ -45,7 +47,7 @@ class ziDAQ(object):
             dev_info = disc.get(device)
             port = dev_info['serverport']
             apilevel = dev_info['apilevel']
-            self._name = dev_info['deviceid']
+            self._name = dev_info['deviceid'].lower()
             self.last_action = 'Lock-in found'
             return port, apilevel
 
@@ -55,7 +57,7 @@ class ziDAQ(object):
 
     def _load_settings(self):
         try:
-            with open('files/lockin.json') as f:
+            with open('calibration/lockin.json') as f:
                 tmp = ''
                 for line in f:
                     tmp += line
@@ -67,48 +69,58 @@ class ziDAQ(object):
             settings = [['/%s/demods/*/enable' % (self._name), 0],
                         ['/%s/demods/*/trigger' % (self._name), 0],
                         ['/%s/sigouts/*/enables/*' % (self._name), 0],
-                        ['/%s/scopes/*/enable' % (self._name), 0]],
+                        ['/%s/scopes/*/enable' % (self._name), 0],
+
                         ['/%s/sigins/%d/ac' % (self._name, self._sigin), 1],
-                        ['/%s/sigins/%d/imp5' % (self._name, self._sigin), 1],
+                        ['/%s/sigins/%d/imp50' % (self._name, self._sigin), 1],
                         ['/%s/sigins/%d/diff' % (self._name, self._sigin), 0],
+
                         ['/%s/demods/0/enable' % (self._name), 1],
                         ['/%s/demods/0/adcselect' % (self._name), self._sigin],
                         ['/%s/demods/0/order' % (self._name), 4],
-                        ['/%s/demods/0/timeconstant' % (self._name), 1],
+                        ['/%s/demods/0/timeconstant' % (self._name), 2e-5],
                         ['/%s/demods/0/rate' % (self._name), 2e5],
                         ['/%s/demods/0/oscselect' % (self._name), 0],
                         ['/%s/demods/0/harmonic' % (self._name), 1],
-                        ['/%s/oscs/0/frequency' % (self._name), 10280000]]
+                        ['/%s/oscs/0/freq' % (self._name), 10280000]]
         finally:
             return settings, msg
 
     def _get_config(self):
         try:
-            self._tc = self.server.getInt('/%s/demods/0/timeconstant' % (self._name))
-            self._rate = self.server.getInt('/%s/demods/0/rate' % (self._name))
-            self._freq = self.server.getInt('/%s/oscs/0/frequency' % (self._name))
+            self._tc = self.server.getDouble('/%s/demods/0/timeconstant' % (self._name))
+            self._rate = self.server.getDouble('/%s/demods/0/rate' % (self._name))
+            self._freq = self.server.getDouble('/%s/oscs/0/frequency' % (self._name))
         except Exception as e:
             self.last_action = str(e)
 
-    def poll(self, poll_length=0.05, timeout=500):
+    def _poll(self, poll_length=0.05, timeout=500, tc=1e-3):
         flat_dictionary_key = True
-        path = '/%s/demods/0/sample'
+        path = '/%s/demods/0' % (self._name)
+
+        self.server.setDouble('%s/timeconstant' % (path), tc)
+        self.server.sync()
 
         self.server.subscribe(path)
         self.server.sync()
 
-        data = self.server.poll()
-        if path in data:
-            x = np.array(data[path]['x'])
-            y = np.array(data[path]['y'])
+        try:
+            data = self.server.poll()
+            if '%s/sample' % (path) in data:
+                x = np.array(data['%s/sample' % (path)]['x'])
+                y = np.array(data['%s/sample' % (path)]['y'])
+            else:
+                x = 0
+                y = 0
+            self.last_action('Polled for %f s and time constant %f s' \
+                             % (poll_length, tc))
+        except Exception as e:
+            self.last_action = 'While polling, encountered error: %s' % (str(e))
+
+        self.server.setDouble('%s/timeconstant' % (path), self._tc)
+        self.server.sync()
 
         return x, y
-        #flat_dictionary_key = True
-#data = daq.poll(0.1, 200, 1, flat_dictionary_key)
-#if '/dev123/demods/0/sample' in data:
-# access the demodulator data:
-#x = data['/dev123/demods/0/sample']['x']
-#y = data['/dev123/demods/0/sample']['y']
 
     def _poll_scope(self, channel):
         try:
@@ -134,6 +146,73 @@ class ziDAQ(object):
             self._api_error = e.msg
             self.last_action = e.msg
 
+    ############################################################################
+    # Property and setter functions for lockin time constant, modulation
+    # frequency and sampling rate
+
+    # Lockin time constant
+    @property
+    def tc(self):
+        return self._tc
+
+    @tc.setter
+    def tc(self, val):
+        self.server.setDouble('/%s/demods/0/timeconstant' % (self._name), val)
+        self.server.sync()
+
+        self._tc = self.server.getDouble('/%s/demods/0/timeconstant' % (self._name))
+        self.last_action = 'Lockin time constant set to %i' % (self._tc)
+
+    # Lockin oscillator frequency
+    @property
+    def freq(self):
+        return self._freq
+
+    @freq.setter
+    def freq(self, val):
+        self.server.setDouble('/%s/oscs/0/frequency' % (self._name), val)
+        self.server.sync()
+
+        self._freq = self.server.getDouble('/%s/oscs/0/frequency' % (self._name))
+        self.last_action = 'Oscillator frequency set to %i' % (self._freq)
+
+    # Lockin sampling rate
+    @property
+    def rate(self):
+        return self._rate
+
+    @rate.setter
+    def rate(self, val):
+        self.server.setDouble('/%s/demods/0/rate' % (self._name), val)
+        self.server.sync()
+
+        self._rate = self.server.getDouble('/%s/demods/0/rate' % (self._name))
+        self.last_action = 'Lockin sampling rate set to %i' % (self._rate)
+
+    ############################################################################
+    # Property and setter functions for signal input/outputs
+
+    @property
+    def sigin(self):
+        return self._sigin
+
+    @sigin.setter
+    def sigin(self, val):
+        self._sigin = val
+        self.last_action = 'Signal input changed to channel %d.' % (val+1)
+
+    @property
+    def sigout(self):
+        return self._sigout
+
+    @sigout.setter
+    def sigout(self, val):
+        self._sigout = val
+        self.last_action = 'Signal output changed to channel %d.' % (val+1)
+
+    ############################################################################
+    # Oscilloscope properties
+
     @property
     def scope(self):
         return self._scope
@@ -156,24 +235,6 @@ class ziDAQ(object):
             #scope_time = np.ceil(np.max([0, np.log2(clockbase*desired_t_shot/2048.)]))
         except:
             self.last_action = ''
-
-    @property
-    def sigin(self):
-        return self._sigin
-
-    @sigin.setter
-    def sigin(self, val):
-        self._sigin = val
-        self.last_action = 'Signal input changed to channel %d.' % (val+1)
-
-    @property
-    def sigout(self):
-        return self._sigout
-
-    @sigout.setter
-    def sigout(self, val):
-        self._sigout = val
-        self.last_action = 'Signal output changed to channel %d.' % (val+1)
 
 #self.server.subscribe('/%s/demods/0/sample' % (self._name))
 #flat_dictionary_key = True

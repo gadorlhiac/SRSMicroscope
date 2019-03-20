@@ -102,9 +102,9 @@ class DelayStage(Device):
             tmp = self.read()
             self.check_errors()
         except PositionerError as e:
-            self.last_action = 'Positioner Error: %s' % (e.msg)
+            self.last_action = 'Positioner Error: %s' % (str(e))
         except CommandError as e:
-            self.last_action = 'Command Error: %s' % (e.msg)
+            self.last_action = 'Command Error: %s' % (str(e))
         except Exception as e:
             self.last_action = 'Unknown error. %s' % (str(e))
 
@@ -124,9 +124,9 @@ class DelayStage(Device):
             self._pos = float(self.read()[3:])
             self.last_action = 'Motion stopped at: %s' % (self._pos)
         except PositionerError as e:
-            self.last_action = 'Positioner Error: %s' % (e.msg)
+            self.last_action = 'Positioner Error: %s' % (str(e))
         except CommandError as e:
-            self.last_action = 'Command Error: %s' % (e.msg)
+            self.last_action = 'Command Error: %s' % (str(e))
         except Exception as e:
             self.last_action = 'Unknown error. %s' % (str(e))
 
@@ -138,9 +138,9 @@ class DelayStage(Device):
             self.check_errors()
             self.last_action = 'Entered DISABLE state'
         except PositionerError as e:
-            self.last_action = 'Positioner Error: %s' % (e.msg)
+            self.last_action = 'Positioner Error: %s' % (str(e))
         except CommandError as e:
-            self.last_action = 'Command Error: %s' % (e.msg)
+            self.last_action = 'Command Error: %s' % (str(e))
         except Exception as e:
             self.last_action = 'Unknown error. %s' % (str(e))
 
@@ -152,9 +152,9 @@ class DelayStage(Device):
             self.check_errors()
             self.last_action = 'Entered READY state'
         except PositionerError as e:
-            self.last_action = 'Positioner Error: %s' % (e.msg)
+            self.last_action = 'Positioner Error: %s' % (str(e))
         except CommandError as e:
-            self.last_action = 'Command Error: %s' % (e.msg)
+            self.last_action = 'Command Error: %s' % (str(e))
         except Exception as e:
             self.last_action = 'Unknown error. %s' % (str(e))
 
@@ -185,14 +185,14 @@ class DelayStage(Device):
         try:
             return self._states[self._state]
         except KeyError as e:
-            self.last_action = '%s. Last state query: %s%s' % (e.msg, \
+            self.last_action = '%s. Last state query: %s%s' % (str(e), \
                                                                self._pos_error, \
                                                                self._state)
         finally:
             return self._states[self._state]
 
     ############################################################################
-    # Poperty and setter functions for delay stage position.
+    # Property and setter functions for delay stage position.
     # Setter function will move the delay stage, using the absolute motion
     # command - NOT the relative motion command.  Time for motion is calculated
     # from relative move, and is used as the program waiting time.
@@ -220,10 +220,10 @@ class DelayStage(Device):
 
         except PositionerError as e:
             self.last_action = 'Position not moved! Positioner Error: %s' \
-                                                                    % (e.msg)
+                                                                    % (str(e))
         except CommandError as e:
             self.last_action = 'Position not moved! Command Error: %s' \
-                                                                    % (e.msg)
+                                                                    % (str(e))
         except Exception as e:
             self.last_action = 'Position not moved! Unknown error. %s' \
                                                                     % (str(e))
@@ -249,11 +249,11 @@ class DelayStage(Device):
             self.last_action = 'Velocity changed to: %s' % (self._pos)
 
         except PositionerError as e:
-            self.last_action = 'Velocity not changed! Positioner Error:\
-                                                                 %s' % (e.msg)
+            self.last_action = 'Velocity not changed! Positioner Error: %s' \
+                                                                    % (str(e))
         except CommandError:
            self.last_action = 'Velocity not changed! Command Error: %s' \
-                                                                    % (e.msg)
+                                                                    % (str(e))
         except Exception as e:
             self.last_action = 'Velocity not changed! Unknown error. %s' \
                                                                     % (str(e))
@@ -276,11 +276,11 @@ class DelayStage(Device):
             self.write(b'1AC?', self._com_time)
             self._accel = float(self.read()[3:])
         except PositionerError:
-            self.last_action = 'Acceleration not changed! Positioner Error: \
-                                                                    %s'% (e.msg)
+            self.last_action = 'Acceleration not changed! Positioner Error: %s'\
+                                                                    % (str(e))
         except CommandError:
            self.last_action = 'Acceleration not changed! Command Error: %s' \
-                                                                    % (e.msg)
+                                                                    % (str(e))
         except Exception as e:
             self.last_action = 'Velocity not changed! Unknown error. %s' \
                                                                     % (str(e))

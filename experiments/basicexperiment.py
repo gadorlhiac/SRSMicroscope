@@ -50,7 +50,7 @@ class BasicExperiment(BaseWidget):
         self._organization()
         #self._expmt_organization()
 
-        self._optimize()
+        #self._optimize()
 
     def _expmt_controls(self):
         self._wl_label = ControlLabel('Main Wavelength: %s' \
@@ -60,19 +60,23 @@ class BasicExperiment(BaseWidget):
         self._set_omega_button = ControlButton('Set Omega')
         self._set_omega_button.value = self._set_omega
 
+        self._optimize_button = 'Optimize Signal'
+        self._optimize_button.value = self._optimizer
+
         self._expmt_panel.value = [ self._wl_label,
                                     self._omega_text, self._set_omega_button,
+                                    self._optimize_button,
                                     self.expmt_history]
 
-        self.mainmenu = [
-        { 'File': [
-                {'Save as': self.save_window, 'icon': 'path-to-image.png'},
-                {'Open as': self.load_window, 'icon': QtGui.QIcon('path-to-image.png')},
-                '-',
-                {'Exit': self.__exit},
-            ]
-        }
-    ]
+    #    self.mainmenu = [
+    #    { 'File': [
+    #            {'Save as': self.save_window, 'icon': 'path-to-image.png'},
+    #            {'Open as': self.load_window, 'icon': QtGui.QIcon('path-to-image.png')},
+    #            '-',
+    #            {'Exit': self.__exit},
+    #        ]
+    #    }
+    #]
 
     def _update_history(self, msg):
         t = time.asctime(time.localtime())
@@ -113,7 +117,7 @@ class BasicExperiment(BaseWidget):
 
     def _load_calibration(self):
         try:
-            with open('t0_calibration.json') as f:
+            with open('calibration/t0_calibration.json') as f:
                 tmp = ''
                 for line in f:
                     tmp += line
@@ -123,26 +127,51 @@ class BasicExperiment(BaseWidget):
             alert = AlertWindow('Alert', msg)
             self._update_history(msg)
 
-    def _optimize(self):
-        # Optimize lockin signal as a function of a delay for the current wl
+    ############################################################################
+    # Functions for optimizing signal vs delay stage position
+
+    def _optimizer(self):
+        self._optimizerThread = threading.Thread(target=self._optimize)
+        self._optimizerThread.start()
+
+    def _optimize(self, plot=True):
+        # Optimize lockin signal as a function of delay for the current wl
         pos = self.delaystage.pos
-        test = np.linspace(pos - .2, pos + .2, 200)
-        self.delaystage.gotopos_text.value = str(test[0])
+        pos_range = np.linspace(pos - .1, pos + .1, 200)
+        self.delaystage.gotopos_text.value = str(pos_range[0])
         self.delaystage.absmov_button.click()
 
-        r = np.zeros([len(test)])
-        for p, i in enumerate(test):
+        r = np.zeros([len(pos_range)])
+        for i, p in enumerate(pos_range):
             self.delaystage.gotopos_text.value = str(p)
             self.delaystage.absmov_button.click()
-            time.sleep(.01)
+            time.sleep(.03)
             x, y = self.zidaq.poll()
             r[i] = np.mean((x**2 + y**2)**0.5)
 
-        self.delaystage.gotopos_text.value = str(pos)
+        wl = str(self.insight.opo_wl)
+        max_pos = pos_range[np.argmax(r)]
+        self.t0_dict[wl] = max_pos
+
+        self.delaystage.gotopos_text.value = str(max_pos)
         self.delaystage.absmov_button.click()
 
-        plt.plot(test, r, 'o')
-        plt.show()
+        json = json.dumps(self.t0_dict)
+
+        with open('calibration/t0_calibration.json', 'w') as f:
+            f.write(json)
+
+        msg = 'Signal maximum for %s nm found at %f.  Calibration updated.' \
+                                                                % (wl, max_pos)
+
+        self._update_history(msg)
+        if plot:
+            plt.plot(test, r*1e6, 'o')
+            plt.xlabel('Delay stage position (mm)')
+            plt.ylabel(r'Demodulated voltage ($\mu$V)')
+            plt.title('Signal vs Delay at %s' % (wl))
+            plt.savefig('calibration/%s.svg' % (wl))
+            plt.show()
 
     def _calibrate(self):
         # Add warning that calibration requires a standard sample

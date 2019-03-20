@@ -52,6 +52,10 @@ class ziDAQController(ziDAQ, BaseWidget):
                 self.sigout = so
                 self._update_history
 
+    def poll(self, poll_length=0.05, timeout=500, tc=1e-3):
+        self._poll(poll_length, timeout, tc)
+        self._update_history()
+
     def _plot_scope(self, channel):
         while 1:
             time.sleep(0.05)
