@@ -68,11 +68,9 @@ class ziDAQ(object):
                         ['/%s/demods/*/trigger' % (self._name), 0],
                         ['/%s/sigouts/*/enables/*' % (self._name), 0],
                         ['/%s/scopes/*/enable' % (self._name), 0]],
-
                         ['/%s/sigins/%d/ac' % (self._name, self._sigin), 1],
                         ['/%s/sigins/%d/imp5' % (self._name, self._sigin), 1],
                         ['/%s/sigins/%d/diff' % (self._name, self._sigin), 0],
-
                         ['/%s/demods/0/enable' % (self._name), 1],
                         ['/%s/demods/0/adcselect' % (self._name), self._sigin],
                         ['/%s/demods/0/order' % (self._name), 4],
