@@ -9,7 +9,6 @@ from pyforms.controls import ControlTextArea
 
 class StageController(DelayStage, BaseWidget):
     def __init__(self, port, com_time):
-        #DelayStage.__init__(self, port='/dev/tty2', com_time=0.1)
         DelayStage.__init__(self, port=port, com_time=com_time)
         BaseWidget.__init__(self, 'Delay Stage Controls')
         self.set_margin(10)
@@ -61,6 +60,7 @@ class StageController(DelayStage, BaseWidget):
 
     ############################################################################
     # Home and enable stage functions
+
     def _disable(self):
         self.disable()
         self._state_label.value = self.state
@@ -76,17 +76,9 @@ class StageController(DelayStage, BaseWidget):
         self._state_label.value = self.state
         self._update_history()
 
-    def _stage_status(self):
-        while 1:
-            time.sleep(1)
-            self.query_state()
-            self._state_label.value = self.state
-            self._pos_label.value = '%f' % (self.pos)
-            self._vel_label.value = '%f' % (self.vel)
-            self._accel_label.value = '%f' % (self.accel)
-
     ############################################################################
     # Motion functions
+
     def _movfor(self):
         try:
             relmove = float(self._relmov_text.value)
@@ -118,6 +110,7 @@ class StageController(DelayStage, BaseWidget):
 
     ############################################################################
     # Velocity and acceleration functions
+
     def _set_vel(self):
         try:
             self.vel = float(self._vel_text.value)
@@ -137,10 +130,23 @@ class StageController(DelayStage, BaseWidget):
             self._update_history()
 
     ############################################################################
-    # Log and widget organization
+    # Logging
+
+    def _stage_status(self):
+        while 1:
+            time.sleep(1)
+            self.query_state()
+            self._state_label.value = self.state
+            self._pos_label.value = '%f' % (self.pos)
+            self._vel_label.value = '%f' % (self.vel)
+            self._accel_label.value = '%f' % (self.accel)
+
     def _update_history(self):
         t = time.asctime(time.localtime())
         self._action_history += '%s: %s' % (t, self.last_action)
+
+    ############################################################################
+    # GUI organization
 
     def _organization(self):
         self.formset = [

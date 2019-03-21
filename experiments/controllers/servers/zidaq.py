@@ -40,6 +40,9 @@ class ziDAQ(object):
         except Exception as e:
             self.last_action = str(e)
 
+    ############################################################################
+    # Lockin device discovery functions and settings initiliazation.
+
     def _discover(self):
         try:
             disc = ziPython.ziDiscovery()
@@ -52,7 +55,7 @@ class ziDAQ(object):
             return port, apilevel
 
         except Exception as e:
-            self.last_action = 'Lock-in not found'
+            self.last_action = 'Lock-in not found. %s' % (str(e))
             return 8005, 1
 
     def _load_settings(self):
@@ -94,6 +97,9 @@ class ziDAQ(object):
         except Exception as e:
             self.last_action = str(e)
 
+    ############################################################################
+    # Polling functions for data retrieval.
+
     def _poll(self, poll_length=0.05, timeout=500, tc=1e-3):
         flat_dictionary_key = True
         path = '/%s/demods/0' % (self._name)
@@ -105,15 +111,15 @@ class ziDAQ(object):
         self.server.sync()
 
         try:
-            data = self.server.poll()
+            data = self.server.poll(poll_length, timeout, 1, flat_dictionary_key)
             if '%s/sample' % (path) in data:
                 x = np.array(data['%s/sample' % (path)]['x'])
                 y = np.array(data['%s/sample' % (path)]['y'])
             else:
                 x = 0
                 y = 0
-            self.last_action('Polled for %f s and time constant %f s' \
-                             % (poll_length, tc))
+            self.last_action = 'Polled for %f s and time constant %f s' \
+                                                            % (poll_length, tc)
         except Exception as e:
             self.last_action = 'While polling, encountered error: %s' % (str(e))
 
@@ -136,6 +142,9 @@ class ziDAQ(object):
         except Exception as e:
             self.last_action = str(e)
 
+    ############################################################################
+    # API errors
+
     def _check_api_errors(self):
         try:
             e = self.server.getLastError()
@@ -143,8 +152,8 @@ class ziDAQ(object):
                 raise APIError(self._api_error)
 
         except APIError as e:
-            self._api_error = e.msg
-            self.last_action = e.msg
+            self._api_error = str(msg)
+            self.last_action = str(msg)
 
     ############################################################################
     # Property and setter functions for lockin time constant, modulation

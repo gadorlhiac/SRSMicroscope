@@ -76,7 +76,8 @@ class DelayStage(Device):
             '33' : 'READY from MOVING.',
             '34' : 'READY from DISABLE.',
             '3C' : 'DISABLE from READY.',
-            '3D' : 'DISABLE from MOVING.'
+            '3D' : 'DISABLE from MOVING.',
+            '!!' : 'State unknown. Error.'
         }
         self._com_time = com_time # Wait time for read/write
 
@@ -93,36 +94,16 @@ class DelayStage(Device):
         self.write(b'1AC?', self._com_time)
         self._accel = float(self.read()[3:])
 
+    ############################################################################
+    # Enable, disable and delay stage homing
 
-    def home(self):
-        # 'Home' the delay stage and get current position,
-        # a value from -100 to 100 mm
+    # Re-enter READY state
+    def enable(self):
         try:
-            self.write(b'1OR', self._com_time)
+            self.write(b'1MM1', self._com_time)
             tmp = self.read()
             self.check_errors()
-        except PositionerError as e:
-            self.last_action = 'Positioner Error: %s' % (str(e))
-        except CommandError as e:
-            self.last_action = 'Command Error: %s' % (str(e))
-        except Exception as e:
-            self.last_action = 'Unknown error. %s' % (str(e))
-
-    # Stop any motion
-    def stop_motion(self):
-        try:
-            self.write(b'1ST', self._com_time)
-            tmp = self.read()
-            if self._cmd_error != '@':
-                raise CommandError(self._cmd_error)
-
-            self.query_state()
-            if int(self._pos_error, 16):
-               raise PositionerError(self._pos_error)
-
-            self.write(b'1TP?', self._com_time)
-            self._pos = float(self.read()[3:])
-            self.last_action = 'Motion stopped at: %s' % (self._pos)
+            self.last_action = 'Entered READY state'
         except PositionerError as e:
             self.last_action = 'Positioner Error: %s' % (str(e))
         except CommandError as e:
@@ -144,13 +125,13 @@ class DelayStage(Device):
         except Exception as e:
             self.last_action = 'Unknown error. %s' % (str(e))
 
-    # Re-enter READY state
-    def enable(self):
+    def home(self):
+        # 'Home' the delay stage and get current position,
+        # a value from -100 to 100 mm
         try:
-            self.write(b'1MM1', self._com_time)
+            self.write(b'1OR', self._com_time)
             tmp = self.read()
             self.check_errors()
-            self.last_action = 'Entered READY state'
         except PositionerError as e:
             self.last_action = 'Positioner Error: %s' % (str(e))
         except CommandError as e:
@@ -158,18 +139,8 @@ class DelayStage(Device):
         except Exception as e:
             self.last_action = 'Unknown error. %s' % (str(e))
 
-    # Read last command error, and query state to see if there are positioner
-    # errors
-    def check_errors(self):
-        self.write(b'1TE', self._com_time) # Last command error
-        self._cmd_error = self.read()[3:].strip()
-        if self._cmd_error != '@':
-            raise CommandError(self._cmd_error)
-        self.query_state()
-        mask = 0b1111111111101111
-        error_code = bin(int(self._pos_error, 16))[2:].zfill(16)
-        if int(error_code, 2) & mask:
-            raise PositionerError(error_code)
+    ############################################################################
+    # Current state and error checking
 
     # Gets the positioner state.  The output is a string with 6 characters such
     # that the first 4 characters correspond to an error code and the last 2
@@ -188,14 +159,30 @@ class DelayStage(Device):
             self.last_action = '%s. Last state query: %s%s' % (str(e), \
                                                                self._pos_error, \
                                                                self._state)
+            self._state = '!!'
         finally:
             return self._states[self._state]
 
+    # Read last command error, and query state to see if there are positioner
+    # errors
+    def check_errors(self):
+        self.write(b'1TE', self._com_time) # Last command error
+        self._cmd_error = self.read()[3:].strip()
+        if self._cmd_error != '@':
+            raise CommandError(self._cmd_error)
+        self.query_state()
+        mask = 0b1111111111101111
+        error_code = bin(int(self._pos_error, 16))[2:].zfill(16)
+        if int(error_code, 2) & mask:
+            raise PositionerError(error_code)
+
     ############################################################################
-    # Property and setter functions for delay stage position.
+    # Delay stage positioning functions.
     # Setter function will move the delay stage, using the absolute motion
     # command - NOT the relative motion command.  Time for motion is calculated
     # from relative move, and is used as the program waiting time.
+    # Stop motion is not a property.
+
     @property
     def pos(self):
         self.write(b'1TP?', self._com_time)
@@ -228,8 +215,31 @@ class DelayStage(Device):
             self.last_action = 'Position not moved! Unknown error. %s' \
                                                                     % (str(e))
 
+    # Stop any motion
+    def stop_motion(self):
+        try:
+            self.write(b'1ST', self._com_time)
+            tmp = self.read()
+            if self._cmd_error != '@':
+                raise CommandError(self._cmd_error)
+
+            self.query_state()
+            if int(self._pos_error, 16):
+               raise PositionerError(self._pos_error)
+
+            self.write(b'1TP?', self._com_time)
+            self._pos = float(self.read()[3:])
+            self.last_action = 'Motion stopped at: %s' % (self._pos)
+        except PositionerError as e:
+            self.last_action = 'Positioner Error: %s' % (str(e))
+        except CommandError as e:
+            self.last_action = 'Command Error: %s' % (str(e))
+        except Exception as e:
+            self.last_action = 'Unknown error. %s' % (str(e))
+
     ############################################################################
     # Velocity property and setter functions.
+
     @property
     def vel(self):
         self.write(b'1VA?', self._com_time)
@@ -260,6 +270,7 @@ class DelayStage(Device):
 
     ############################################################################
     # Acceleration property and setter functions.
+
     @property
     def accel(self):
         self.write(b'1AC?', self._com_time)

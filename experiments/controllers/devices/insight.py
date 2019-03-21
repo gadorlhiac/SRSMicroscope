@@ -48,8 +48,9 @@ class Insight(Device):
             '481': 'Fault: Slow diode ramp. Contact S-P.',
             '482': 'Fault: Low fs osc power. Contact S-P.',
             '483': 'Fault: low FTO power. Try different wavelengths. Contact S-P.'}
-        # Variables
         #######################################################################
+        # Variables
+
         # Not intended to be accessed directly, only through properties
         self._com_time = com_time
         self._state = 0
@@ -77,6 +78,32 @@ class Insight(Device):
         time.sleep(self._com_time)
         self.laser_stats()
 
+    ############################################################################
+    # Laser on/off
+
+    def turnon(self):
+        try:
+            self.write(b'ON', self._com_time)
+            self.check_errors()
+            self.last_action = 'Laser turning on.'
+        except OperationError as e:
+            self.last_action = 'Operation error turning on: %s' % (str(e))
+        except Exception as e:
+            self.last_action = 'Error turning on: %s' % (str(e))
+
+    def turnoff(self):
+        try:
+            self.write(b'OFF', self._com_time)
+            self.check_errors()
+            self.last_action = 'Laser entering hibernate mode.'
+        except OperationError as e:
+            self.last_action = 'Operation error turning off: %s' % (str(e))
+        except Exception as e:
+            self.last_action = 'Error turning off: %s' % (str(e))
+
+    ############################################################################
+    # Laser state and error history
+
     # Read errors is same command as query state but separate functions to allow
     # flexibility in error handling
     def query_state(self):
@@ -84,6 +111,8 @@ class Insight(Device):
         s = int(self.read())
         masked = s & 0x007F0000
         self._state = masked >> 16
+        self._main_shutter = s & 0x00000004
+        self._fixed_shutter = s & 0x00000008
         return s
 
     def check_errors(self):
@@ -98,9 +127,9 @@ class Insight(Device):
             if any(codes):
                 raise OperationError
         except OperationError as e:
-            self.last_action = e.msg
+            self.last_action = 'Operation error while checking errors: %s' % (str(e))
         except Exception as e:
-            self.last_action = 'check errors. %s' % (str(e))
+            self.last_action = 'Error while checking errors: %s' % (str(e))
         finally:
             return full_state
 
@@ -119,14 +148,16 @@ class Insight(Device):
             self.last_action = 'Read from history buffer.'
             return string
         except Exception as e:
-            self.last_action = 'Read history. %s' % (str(e))
+            self.last_action = 'Error while reading history: %s' % (str(e))
 
+    # Number of diode on hours
     def laser_hrs(self):
         self.write(b'READ:PLASer:DIODe1:HOURS?', self._com_time)
         self.diode1_hrs = self.read().strip()
         self.write(b'READ:PLASer:DIODe2:HOURS?', self._com_time)
         self.diode2_hrs = self.read().strip()
 
+    # Temperature, humidity and diode current
     def laser_stats(self):
         self.write(b'READ:PLASer:DIODe1:TEMPerature?', self._com_time)
         self.diode1_temp = self.read().strip()
@@ -141,26 +172,11 @@ class Insight(Device):
         self.write(b'READ:PLASer:DIODe2:CURRent?', self._com_time)
         self.diode2_curr = self.read().strip()
 
-    def turnon(self):
-        try:
-            self.write(b'ON', self._com_time)
-            self.check_errors()
-            self.last_action = 'Laser turning on.'
-        except OperationError as e:
-            self.last_action = e.msg
-        except Exception as e:
-            self.last_action = 'turnon. %s' % (str(e))
+    ############################################################################
+    # Accessible properties for laser state OPO wavelength tuning, and shutter
+    # control
 
-    def turnoff(self):
-        try:
-            self.write(b'OFF', self._com_time)
-            self.check_errors()
-            self.last_action = 'Laser entering hibernate mode.'
-        except OperationError as e:
-            self.last_action = e.msg
-        except Exception as e:
-            self.last_action = 'turnoff. %s' % (str(e))
-
+    # Current laser status
     @property
     def state(self):
         if self._state < 25:
@@ -180,6 +196,7 @@ class Insight(Device):
         else:
             return self._states[7]
 
+    # For OPO tuning
     @property
     def opo_wl(self):
         return self._opo_wl
@@ -198,12 +215,13 @@ class Insight(Device):
             self._opo_wl = wl
             self.last_action = 'Wavelength changed to: %i' % (self._opo_wl)
         except OperationError as e:
-            self.last_action = e.msg
+            self.last_action = 'Operation error changing wavelength: %s' % str(e))
         except TuningError as e:
-            self.last_action = e.msg
+            self.last_action = str(e)
         except Exception as e:
-            self.last_action = 'Opo_wl setter. %s' % (str(e))
+            self.last_action = 'Error while changing wavelength: %s' % (str(e))
 
+    # Shutter control
     @property
     def main_shutter(self):
         return self._main_shutter
@@ -217,9 +235,9 @@ class Insight(Device):
             self._main_shutter = val
             self.last_action = 'Main shutter %s' % (msg[val])
         except OperationError as e:
-            self.last_action = e.msg
+            self.last_action = 'Operation error while operating shutter: %s' % (str(e))
         except Exception as e:
-            self.last_action = 'Main shutter setter. %s' % (str(e))
+            self.last_action = 'Error while operating shutter: %s' % (str(e))
 
     @property
     def fixed_shutter(self):
@@ -234,9 +252,9 @@ class Insight(Device):
             self._fixed_shutter = val
             self.last_action = 'Fixed shutter %s' % (msg[val])
         except OperationError as e:
-            self.last_action = e.msg
+            self.last_action = 'Operation error while operating shutter: %s' % (str(e))
         except Exception as e:
-            self.last_action = 'Fixed shutter setter. %s' % (str(e))
+            self.last_action = 'Error while operating shutter: %s' % (str(e))
 
 
     # Need deepsee stuff

@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 
 from experiments.basicexperiment import *
+from experiments.calibrator import *
 from experiments.controllers.gui.ControlCombo import *
 from pyforms.controls import ControlDir, ControlDockWidget
 import time
@@ -30,6 +31,7 @@ class Selector(BaseWidget):
         self._expmt_list = ControlCombo()
         self._expmt_list += ('', 0)
         self._expmt_list += ('Basic Controller', 1)
+        self._expmt_list += ('Time Zero Calibration', 2)
 
         self._start_button = ControlButton('Start')
 
@@ -66,6 +68,13 @@ class SRSMicroscope(BaseWidget):
                 raise ExpmtError
             elif self._selector.expmt == 1:
                 self.expmt = BasicExperiment()
+                self.expmt.parent = self._expmt_panel
+                self._expmt_panel.value = self.expmt
+                self.value = self.expmt
+                self._expmt_panel.show()
+                self._open_panel.hide()
+            elif self._selector.expmt == 2:
+                self.expmt = Calibrator()
                 self.expmt.parent = self._expmt_panel
                 self._expmt_panel.value = self.expmt
                 self.value = self.expmt

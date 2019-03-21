@@ -48,9 +48,6 @@ class BasicExperiment(BaseWidget):
 
         self._expmt_controls()
         self._organization()
-        #self._expmt_organization()
-
-        #self._optimize()
 
     def _expmt_controls(self):
         self._wl_label = ControlLabel('Main Wavelength: %s' \
@@ -60,12 +57,16 @@ class BasicExperiment(BaseWidget):
         self._set_omega_button = ControlButton('Set Omega')
         self._set_omega_button.value = self._set_omega
 
-        self._optimize_button = 'Optimize Signal'
+        self._optimize_button = ControlButton('Optimize Signal')
         self._optimize_button.value = self._optimizer
+
+        self._tuned_spectrum_button = ControlButton('Tuned Spectrum')
+        self._tuned_spectrum_button.value = self._tune_spectrum
 
         self._expmt_panel.value = [ self._wl_label,
                                     self._omega_text, self._set_omega_button,
                                     self._optimize_button,
+                                    self._tuned_spectrum_button,
                                     self.expmt_history]
 
     #    self.mainmenu = [
@@ -77,6 +78,33 @@ class BasicExperiment(BaseWidget):
     #        ]
     #    }
     #]
+
+    def _tune_spectrum(self):
+        keys = self.t0_dict.keys()
+        omegas = np.zeros([len(keys)])
+        srs = np.zeros([len(keys)])
+        for i, wl in enumerate(keys):
+            print(wl)
+            self.insight.tune_wl_val.value = str(wl)
+            self.insight.tune_wl_button.click()
+            time.sleep(3)
+            self._calc_omega()
+            self._omega_text.value = '%.2f' % (self.omega)
+
+            move = self.t0_dict[str(wl)]
+            self.delaystage.gotopos_text.value = str(move)
+            self.delaystage.absmov_button.click()
+            time.sleep(1)
+
+            x, y = self.zidaq.poll()
+            omegas[i] = self.omega
+            srs[i] = np.mean((x**2 + y**2)**0.5)
+
+        plt.plot(omegas, srs*1e6, 'o')
+        plt.xlabel(r'Wavenumber (cm$^{-1}$)')
+        plt.ylabel(r'Demodulated voltage ($\mu$V)')
+        plt.title('PDMS SRS Spectrum')
+        plt.savefig('calibration/spectrum_test.svg')
 
     def _update_history(self, msg):
         t = time.asctime(time.localtime())
@@ -143,34 +171,35 @@ class BasicExperiment(BaseWidget):
 
         r = np.zeros([len(pos_range)])
         for i, p in enumerate(pos_range):
+            print(i)
             self.delaystage.gotopos_text.value = str(p)
             self.delaystage.absmov_button.click()
-            time.sleep(.03)
+            time.sleep(.2)
             x, y = self.zidaq.poll()
             r[i] = np.mean((x**2 + y**2)**0.5)
 
-        wl = str(self.insight.opo_wl)
+        wl = int(self.insight.opo_wl)
         max_pos = pos_range[np.argmax(r)]
         self.t0_dict[wl] = max_pos
 
         self.delaystage.gotopos_text.value = str(max_pos)
         self.delaystage.absmov_button.click()
 
-        json = json.dumps(self.t0_dict)
+        calib = json.dumps(self.t0_dict)
 
         with open('calibration/t0_calibration.json', 'w') as f:
-            f.write(json)
+            f.write(calib)
 
-        msg = 'Signal maximum for %s nm found at %f.  Calibration updated.' \
+        msg = 'Signal maximum for %d nm found at %f.  Calibration updated.' \
                                                                 % (wl, max_pos)
 
         self._update_history(msg)
         if plot:
-            plt.plot(test, r*1e6, 'o')
+            plt.plot(pos_range, r*1e6, 'o')
             plt.xlabel('Delay stage position (mm)')
             plt.ylabel(r'Demodulated voltage ($\mu$V)')
-            plt.title('Signal vs Delay at %s' % (wl))
-            plt.savefig('calibration/%s.svg' % (wl))
+            plt.title('Signal vs Delay at %i nm' % (wl))
+            plt.savefig('calibration/%i.svg' % (wl))
             plt.show()
 
     def _calibrate(self):
@@ -180,11 +209,6 @@ class BasicExperiment(BaseWidget):
         # This function will call optimize for multiple wavelengths
         # dict = json.dumps(dict)
         pass
-
-    def _expmt_organization(self):
-        self._expmt_panel.formset = [
-                ('','_test_button','')
-        ]
 
     def _organization(self):
         self.formset = [{

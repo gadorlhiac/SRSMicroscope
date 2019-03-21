@@ -40,6 +40,23 @@ class ziDAQController(ziDAQ, BaseWidget):
         self.monitorThread.start()
         self._update_history()
 
+    ############################################################################
+    # Polling functions
+
+    def poll(self, poll_length=0.05, timeout=500, tc=1e-3):
+        x, y = self._poll(poll_length, timeout, tc)
+        self._update_history()
+        return x, y
+
+    def _plot_scope(self, channel):
+        while 1:
+            time.sleep(0.05)
+            self._poll_scope(channel)
+            self._scope_viewer.value = self.scope
+
+    ############################################################################
+    # State monitoring and logging functions
+
     def _monitor(self):
         while 1:
             time.sleep(0.05)
@@ -52,19 +69,12 @@ class ziDAQController(ziDAQ, BaseWidget):
                 self.sigout = so
                 self._update_history
 
-    def poll(self, poll_length=0.05, timeout=500, tc=1e-3):
-        self._poll(poll_length, timeout, tc)
-        self._update_history()
-
-    def _plot_scope(self, channel):
-        while 1:
-            time.sleep(0.05)
-            self._poll_scope(channel)
-            self._scope_viewer.value = self.scope
-
     def _update_history(self):
         t = time.asctime(time.localtime())
         self._action_history += '%s: %s' % (t, self.last_action)
+
+    ############################################################################
+    # GUI organization
 
     def _organization(self):
         self.formset = [
