@@ -93,7 +93,7 @@ class ziDAQ(object):
         try:
             self._tc = self.server.getDouble('/%s/demods/0/timeconstant' % (self._name))
             self._rate = self.server.getDouble('/%s/demods/0/rate' % (self._name))
-            self._freq = self.server.getDouble('/%s/oscs/0/frequency' % (self._name))
+            self._freq = self.server.getDouble('/%s/oscs/0/freq' % (self._name))
         except Exception as e:
             self.last_action = str(e)
 
@@ -179,10 +179,10 @@ class ziDAQ(object):
 
     @freq.setter
     def freq(self, val):
-        self.server.setDouble('/%s/oscs/0/frequency' % (self._name), val)
+        self.server.setDouble('/%s/oscs/0/freq' % (self._name), val)
         self.server.sync()
 
-        self._freq = self.server.getDouble('/%s/oscs/0/frequency' % (self._name))
+        self._freq = self.server.getDouble('/%s/oscs/0/freq' % (self._name))
         self.last_action = 'Oscillator frequency set to %i' % (self._freq)
 
     # Lockin sampling rate

@@ -55,7 +55,8 @@ class StageController(DelayStage, BaseWidget):
         self._organization()
 
         # Constant querying thread
-        self.queryThread = threading.Thread(target=self._stage_status)
+        self.queryThread = threading.Thread(name='Stage Query Thread', target=self._stage_status)
+        self.queryThread.daemon = True
         self.queryThread.start()
 
     ############################################################################

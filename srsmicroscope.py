@@ -53,7 +53,7 @@ class SRSMicroscope(BaseWidget):
         self._selector = Selector()
         self._selector._start_button.value = self._new_experiment
 
-        self._open_panel.value = self._selector#self._dir_sele#, self._expmt_list, self._start_button)
+        self._open_panel.value = self._selector
 
         self._expmt_panel = ControlEmptyWidget()
         self._expmt_panel.hide()

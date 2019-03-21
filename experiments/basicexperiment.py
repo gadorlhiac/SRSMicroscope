@@ -20,7 +20,9 @@ class BasicExperiment(BaseWidget):
 
         # Variables defined only for the experiment and not laser etc
         self.omega = 1000 # Raman shift
-        self.t0_dict = {} # Dictionary of time zero overlaps, saved to json
+
+        # Dictionary of time zero overlaps, saved to json
+        self.t0_dict = {'stage': {}, 'dsmpos': {}}
 
         self._insight_panel = ControlEmptyWidget(margin=10)
         self._stage_panel = ControlEmptyWidget(margin=10, side='right')
@@ -31,7 +33,7 @@ class BasicExperiment(BaseWidget):
         self.insight.parent = self
         self._insight_panel.value = self.insight
 
-        self.delaystage = StageController('COM7', 0.03)
+        self.delaystage = StageController('COM7', 0.05)
         self.delaystage.parent = self
         self._stage_panel.value = self.delaystage
 
@@ -39,14 +41,11 @@ class BasicExperiment(BaseWidget):
         self.zidaq.parent = self
         self._zidaq_panel.value = self.zidaq
 
-        self.expmt_history = ControlTextArea('Experiment Log')
-        self.expmt_history.readonly = True
-
         # Organization and parameter initialization
+        self._expmt_controls()
         self._calc_omega()
         self._load_calibration()
 
-        self._expmt_controls()
         self._organization()
 
     def _expmt_controls(self):
@@ -57,13 +56,22 @@ class BasicExperiment(BaseWidget):
         self._set_omega_button = ControlButton('Set Omega')
         self._set_omega_button.value = self._set_omega
 
+        self._dwell_text = ControlText('Pixel Dwell Time (us):')
+        self._dwell_text.value = '2'
+        self._set_dwell_button = ControlButton('Set Lockin')
+        self._set_dwell_button.value = self._set_dwell
+
         self._optimize_button = ControlButton('Optimize Signal')
         self._optimize_button.value = self._optimizer
 
         self._tuned_spectrum_button = ControlButton('Tuned Spectrum')
-        self._tuned_spectrum_button.value = self._tune_spectrum
+        self._tuned_spectrum_button.value = self._tuned_spectrum
+
+        self.expmt_history = ControlTextArea('Experiment Log')
+        self.expmt_history.readonly = True
 
         self._expmt_panel.value = [ self._wl_label,
+                                    self._dwell_text, self._set_dwell_button,
                                     self._omega_text, self._set_omega_button,
                                     self._optimize_button,
                                     self._tuned_spectrum_button,
@@ -79,7 +87,20 @@ class BasicExperiment(BaseWidget):
     #    }
     #]
 
-    def _tune_spectrum(self):
+    def _set_dwell(self):
+        dwell = float(self._dwell_text.value.strip())/1e6
+        self.zidaq.tc_text.value = str(dwell/3.)
+        self.zidaq.set_tc_button.click()
+        tc = self.zidaq.tc
+
+        self.zidaq.rate_text.value = str(2./dwell)
+        self.zidaq.set_rate_button.click()
+        rate = self.zidaq.rate
+
+        msg = 'Lockin TC changed to %f.  Lockin sampling rate changed to %f' \
+                                                                % (tc, rate)
+
+    def _tuned_spectrum(self):
         keys = self.t0_dict.keys()
         omegas = np.zeros([len(keys)])
         srs = np.zeros([len(keys)])
@@ -100,6 +121,8 @@ class BasicExperiment(BaseWidget):
             omegas[i] = self.omega
             srs[i] = np.mean((x**2 + y**2)**0.5)
 
+        plt.clf()
+        plt.cla()
         plt.plot(omegas, srs*1e6, 'o')
         plt.xlabel(r'Wavenumber (cm$^{-1}$)')
         plt.ylabel(r'Demodulated voltage ($\mu$V)')
@@ -127,15 +150,18 @@ class BasicExperiment(BaseWidget):
                                                 % (str(self.insight.opo_wl))
 
             # Tune delay appropriately
-            move = self.t0_dict[wl]
+            move = self.t0_dict['stage'][str(wl)]
             self.delaystage.gotopos_text.value = str(move)
             self.delaystage.absmov_button.click()
+
+            msg = 'Wavelength changed to %i nm.  Delay stage moved.' % (wl)
+            self._update_history(msg)
         except KeyError as e:
-            msg = 'No delay stage calibration for %i nm' % (wl)
+            msg = 'Wavelength changed to %i nm. No delay stage calibration' % (wl)
             alert = AlertWindow('Alert', msg)
             self._update_history(msg)
         except Exception as e:
-            msg = str(e)
+            msg = 'Wavelength note changed. %s' % (str(e))
             alert = AlertWindow('Alert', msg)
             self._update_history(msg)
 
@@ -150,6 +176,11 @@ class BasicExperiment(BaseWidget):
                 for line in f:
                     tmp += line
                 self.t0_dict = json.loads(tmp)
+            msg = 'Calibration found for:\n'
+            for key in self.t0_dict['stage'].keys():
+                msg += '\t%s nm\n' % (key)
+            self._update_history(msg)
+
         except FileNotFoundError as e:
             msg = 'No time zero calibration found'
             alert = AlertWindow('Alert', msg)
@@ -159,7 +190,8 @@ class BasicExperiment(BaseWidget):
     # Functions for optimizing signal vs delay stage position
 
     def _optimizer(self):
-        self._optimizerThread = threading.Thread(target=self._optimize)
+        self._optimizerThread = threading.Thread(name='Signal Optimizer Thread', target=self._optimize)
+        self._optimizerThread.daemon = True
         self._optimizerThread.start()
 
     def _optimize(self, plot=True):
@@ -178,9 +210,10 @@ class BasicExperiment(BaseWidget):
             x, y = self.zidaq.poll()
             r[i] = np.mean((x**2 + y**2)**0.5)
 
-        wl = int(self.insight.opo_wl)
+        wl = str(self.insight.opo_wl)
         max_pos = pos_range[np.argmax(r)]
-        self.t0_dict[wl] = max_pos
+        self.t0_dict['stage'][wl] = max_pos
+        self.t0_dict['dsmpos'][wl] = self.insight.dsmpos
 
         self.delaystage.gotopos_text.value = str(max_pos)
         self.delaystage.absmov_button.click()
@@ -201,14 +234,6 @@ class BasicExperiment(BaseWidget):
             plt.title('Signal vs Delay at %i nm' % (wl))
             plt.savefig('calibration/%i.svg' % (wl))
             plt.show()
-
-    def _calibrate(self):
-        # Add warning that calibration requires a standard sample
-        # Need to decide what that is? KDP SFG with some filters on lockin?
-        # Otherwise can use optimize function to maximize signal for 1 wl
-        # This function will call optimize for multiple wavelengths
-        # dict = json.dumps(dict)
-        pass
 
     def _organization(self):
         self.formset = [{

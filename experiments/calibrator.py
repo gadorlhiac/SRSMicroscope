@@ -20,7 +20,9 @@ class Calibrator(BaseWidget):
 
         # Variables defined only for the experiment and not laser etc
         self.omega = 1000 # Raman shift
-        self.t0_dict = {} # Dictionary of time zero overlaps, saved to json
+
+        # Dictionary of time zero overlaps, saved to json
+        self.t0_dict = {'stage': {}, 'dsmpos': {}}
 
         self._insight_panel = ControlEmptyWidget(margin=10)
         self._stage_panel = ControlEmptyWidget(margin=10, side='right')
@@ -31,7 +33,7 @@ class Calibrator(BaseWidget):
         self.insight.parent = self
         self._insight_panel.value = self.insight
 
-        self.delaystage = StageController('COM7', 0.03)
+        self.delaystage = StageController('COM7', 0.05)
         self.delaystage.parent = self
         self._stage_panel.value = self.delaystage
 
@@ -39,23 +41,22 @@ class Calibrator(BaseWidget):
         self.zidaq.parent = self
         self._zidaq_panel.value = self.zidaq
 
-        self.expmt_history = ControlTextArea('Experiment Log')
-        self.expmt_history.readonly = True
-
         # Organization and parameter initialization
+        self._expmt_controls()
         self._load_calibration()
 
-        self._expmt_controls()
         self._organization()
 
     def _expmt_controls(self):
-        self._wl_label = ControlLabel('Main Wavelength: %s' \
-                                                % (str(self.insight.opo_wl)))
+        self._wl_range_text = ControlText('Wavelength Range to Calibrate:')
+
+        self.expmt_history = ControlTextArea('Experiment Log')
+        self.expmt_history.readonly = True
 
         self._calibrate_button = ControlButton('Calibrate')
         self._calibrate_button.value = self._calibrator
 
-        self._expmt_panel.value = [ self._wl_label,
+        self._expmt_panel.value = [ self._wl_range_text,
                                     self._calibrate_button,
                                     self.expmt_history]
 
@@ -70,6 +71,11 @@ class Calibrator(BaseWidget):
                 for line in f:
                     tmp += line
                 self.t0_dict = json.loads(tmp)
+            msg = 'Calibration found for:\n'
+            for key in self.t0_dict['stage'].keys():
+                msg += '\t%s nm\n' % (key)
+            self._update_history(msg)
+
         except FileNotFoundError as e:
             msg = 'No time zero calibration found'
             alert = AlertWindow('Alert', msg)
@@ -99,7 +105,8 @@ class Calibrator(BaseWidget):
 
         wl = str(self.insight.opo_wl)
         max_pos = pos_range[np.argmax(r)]
-        self.t0_dict[wl] = max_pos
+        self.t0_dict['stage'][wl] = max_pos
+        self.t0_dict['dsmpos'][wl] = self.insight.dsmpos
 
         calib = json.dumps(self.t0_dict)
         with open('calibration/t0_calibration.json', 'w') as f:
@@ -118,14 +125,24 @@ class Calibrator(BaseWidget):
         plt.cla()
         plt.clf()
 
+    def _get_wavelength_range(self):
+        text = self._wl_range_text.value
+        wlrange = text.split('-')
+        wlmin = int(wlrange[0])
+        wlmax = int(wlrange[1])
+        return np.linspace(wlmin, wlmax, wlmin-wlmax+1)
+
     def _calibrate(self):
-        wls = np.linspace(795, 805, 11)
+        wls = self._get_wavelength_range()
         for i, wl in enumerate(wls):
             self.insight.tune_wl_val.value = str(int(wl))
             self.insight.tune_wl_button.click()
             print(wl)
             time.sleep(2)
-            self._optimize(self.t0_dict[str(int(wl))])
+            try:
+                self._optimize(self.t0_dict['stage'][str(int(wl))])
+            except KeyError as e:
+                self._optimize(self.t0_dict['stage'][str(int(wl) - 1)] + .25)
 
     def _organization(self):
         self.formset = [{

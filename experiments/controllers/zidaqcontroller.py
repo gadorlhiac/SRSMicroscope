@@ -18,27 +18,77 @@ class ziDAQController(ziDAQ, BaseWidget):
         BaseWidget.__init__(self, 'ZI HF2LI')
         self.set_margin(10)
 
-        self._sigin_sele = ControlCombo()
-        self._sigin_sele += ('Siginal Input 1', 0)
-        self._sigin_sele += ('Siginal Input 2', 1)
+        # Time constant, frequency, sampling rate
+        self.tc_text = ControlText('Time Constant (s):')
+        self.tc_text.value = str(self.tc)
+        self.set_tc_button = ControlButton('Set')
+        self.set_tc_button.value = self._set_tc
 
-        self._sigout_sele = ControlCombo()
-        self._sigout_sele += ('Siginal Output 1', 0)
-        self._sigout_sele += ('Siginal Output 2', 1)
+        self.freq_text = ControlText('Oscillator Frequency (Hz):')
+        self.freq_text.value = str(self.freq)
+        self.set_freq_button = ControlButton('Set')
+        self.set_freq_button.value = self._set_freq
 
-        #self._scope_viewer = ControlMatplotlib(default=self.scope)
+        self.rate_text = ControlText('Sampling Rate (Hz):')
+        self.rate_text.value = str(self.rate)
+        self.set_rate_button = ControlButton('Set')
+        self.set_rate_button.value = self._set_rate
 
         # Action and error log
         self._action_history = ControlTextArea('Action and Error Log')
         self._action_history.readonly = True
 
+        #self.monitorThread = threading.Thread(name='Lockin Query Thread', target=self._monitor)
+        #self.monitorThread.daemon = True
+        #self.monitorThread.start()
+        self._update_history()
+
         self._organization()
+
+        # Signal in/out selectors
+        #self._sigin_sele = ControlCombo()
+        #self._sigin_sele += ('Siginal Input 1', 0)
+        #self._sigin_sele += ('Siginal Input 2', 1)
+
+        #self._sigout_sele = ControlCombo()
+        #self._sigout_sele += ('Siginal Output 1', 0)
+        #self._sigout_sele += ('Siginal Output 2', 1)
+
+        # Oscilloscope trace
+        #self._scope_viewer = ControlMatplotlib(default=self.scope)
+
         #self.scopeThread = threading.Thread(target=self._plot_scope, args=[0])
         #self.scopeThread.start()
 
-        self.monitorThread = threading.Thread(target=self._monitor)
-        self.monitorThread.start()
-        self._update_history()
+    ############################################################################
+    # TC, frequency and sampling rate setters
+
+    def _set_tc(self):
+        try:
+            self.tc = float(self.tc_text.value.strip())
+            self.tc_text.value = str(self.tc)
+        except Exception as e:
+            self.last_action = 'Error changing time constant: %s' % (str(e))
+        finally:
+            self._update_history()
+
+    def _set_freq(self):
+        try:
+            self.freq = float(self.freq_text.value.strip())
+            self.freq_text.value = str(self.freq)
+        except Exception as e:
+            self.last_action = 'Error changing oscillator frequency: %s' % (str(e))
+        finally:
+            self._update_history()
+
+    def _set_rate(self):
+        try:
+            self.rate = float(self.rate_text.value.strip())
+            self.rate_text.value = str(self.rate)
+        except Exception as e:
+            self.last_action = 'Error changing sampling rate: %s' % (str(e))
+        finally:
+            self._update_history()
 
     ############################################################################
     # Polling functions
@@ -78,10 +128,14 @@ class ziDAQController(ziDAQ, BaseWidget):
 
     def _organization(self):
         self.formset = [
-        ('', 'h5:Connection Selectors', ''),
-        ('_sigin_sele', '', '_sigout_sele'),
+        #('', 'h5:Connection Selectors', ''),
+        #('_sigin_sele', '', '_sigout_sele'),
         #('', 'h5:Oscilloscope Trace', ''),
         #('', '_scope_viewer', ''),
+        ('', 'h5:Parameter Setting', ''),
+        ('tc_text', '', 'set_tc_button'),
+        ('freq_text', '', 'set_freq_button'),
+        ('rate_text', '', 'set_rate_button'),
         ('', 'h5:Logs', ''),
         ('_action_history')
         ]

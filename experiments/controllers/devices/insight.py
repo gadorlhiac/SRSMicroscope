@@ -53,13 +53,18 @@ class Insight(Device):
 
         # Not intended to be accessed directly, only through properties
         self._com_time = com_time
-        self._state = 0
         self._opo_wl = 0
         self._main_shutter = 0
         self._fixed_shutter = 0
+
+        self._state = 0
         self._states = ['Initializing', 'Ready to turn on',
                         'Turning on and/or optimizing', 'RUN', 'Moving to Align mode',
                         'Align mode', 'Exiting Align mode', 'Reserved']
+
+        self._dsmpos = '50'
+        self._dsmmin = '0'
+        self._dsmmax = '100'
 
         # Access directly
         self.diode1_temp = ''
@@ -73,6 +78,16 @@ class Insight(Device):
         # Initialize the values where needed
         self.write(b'WAVelength?', self._com_time)
         self._opo_wl = int(self.read().strip())
+
+        self.write(b'CONT:DSMPOS?', self._com_time)
+        self._dsmpos = self.read().strip()
+
+        self.write(b'CONT:SLMIN?', self._com_time)
+        self._dsmmin = self.read().strip()
+
+        self.write(b'CONT:SLMAX?', self._com_time)
+        self._dsmmax = self.read().strip()
+
         time.sleep(self._com_time)
         self.laser_hrs()
         time.sleep(self._com_time)
@@ -213,9 +228,11 @@ class Insight(Device):
                 raise TuningError
 
             self._opo_wl = wl
-            self.last_action = 'Wavelength changed to: %i' % (self._opo_wl)
+            pos = self.dsmpos
+            self.last_action = 'Wavelength changed to: %i. DSM position %s' \
+                                                        % (self._opo_wl, pos)
         except OperationError as e:
-            self.last_action = 'Operation error changing wavelength: %s' % str(e))
+            self.last_action = 'Operation error changing wavelength: %s' % (str(e))
         except TuningError as e:
             self.last_action = str(e)
         except Exception as e:
@@ -256,5 +273,37 @@ class Insight(Device):
         except Exception as e:
             self.last_action = 'Error while operating shutter: %s' % (str(e))
 
+    ############################################################################
+    # DeepSee
 
-    # Need deepsee stuff
+    # Get current DeepSee position
+    @property
+    def dsmpos(self):
+        self.write(b'CONT:DSMPOS?', self._com_time)
+        self._dsmpos = self.read().strip()
+        return self._dsmpos
+
+    @dsmpos.setter
+    def dsmpos(self, val):
+        try:
+            self.write(b'CONT:DSMPOS %s' % (val), self._com_time)
+            self.check_errors()
+            self.write(b'CONT:DSMPOS?', self._com_time)
+            self._dsmpos = self.read().strip()
+            self.last_action = 'DSMPOS set to %s' % (self._dsmpos)
+        except OperationError as e:
+            self.last_action = 'Operation error while setting DSMPOS: %s' % (str(e))
+        except Exception as e:
+            self.last_action = 'Error while setting DSMPOS: %s' % (str(e))
+
+    @property
+    def dsmmin(self):
+        self.write(b'CONT:SLMIN?', self._com_time)
+        self._dsmmin = self.read().strip()
+        return self._dsmmin
+
+    @property
+    def dsmmax(self):
+        self.write(b'CONT:SLMAX?', self._com_time)
+        self._dsmmax = self.read().strip()
+        return self._dsmmax
