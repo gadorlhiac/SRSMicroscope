@@ -7,15 +7,23 @@ from pyforms.controls import ControlText, ControlButton, ControlLabel
 from pyforms.controls import ControlTextArea
 
 class Controller(BaseWidget):
-    def __init__(self, port, com_time):
-        BaseWidget.__init__(self, 'Controller')
+    def __init__(self, formset, title='Controller'):
+        BaseWidget.__init__(self, title)
         self.set_margin(10)
 
+        # GUI widgets
         self._widgets()
+
+        # GUI Organization
+        self.formset = formset
+
+        # Record initiliazation
         self._update_history()
 
-        # Layout
-        self._organization()
+        # Status query threading
+        self.queryThread = threading.Thread(name='%s Query Thread' % (title), target=self._status)
+        self.queryThread.daemon = True
+        self.queryThread.start()
 
     ############################################################################
     # GUI Widgets
@@ -35,9 +43,10 @@ class Controller(BaseWidget):
         except NameError as e:
             self.last_action = 'No known connection or action.'
 
-    ############################################################################
-    # GUI organization
+    @property
+    def action_history(self):
+        return self._action_history
 
-    def _organization(self):
-        self.formset = [ ('','h5:Logs',''),
-                         ('_action_history') ]
+    def _status(self):
+        while 1:
+            pass

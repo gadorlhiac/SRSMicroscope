@@ -3,7 +3,7 @@
 import numpy as np
 import time
 import zhinst.ziPython as ziPython
-import json
+import yaml
 
 class APIError(Exception):
     def __init__(self, error):
@@ -60,11 +60,11 @@ class ziDAQ(object):
 
     def _load_settings(self):
         try:
-            with open('calibration/lockin.json') as f:
+            with open('calibration/lockin.yaml') as f:
                 tmp = ''
                 for line in f:
                     tmp += line
-                settings = json.loads(tmp)
+                settings = yaml.load(tmp)
             msg = 'settings loaded'
         except FileNotFoundError as e:
             msg = 'using default settings'

@@ -8,42 +8,16 @@ import numpy as np
 from .servers.zidaq import *
 from .gui.ControlMatplotlib import *
 from .gui.ControlCombo import *
+from .controller import *
 from pyforms import BaseWidget
 from pyforms.controls import ControlText, ControlButton, ControlLabel
 from pyforms.controls import ControlTextArea
 
-class ziDAQController(ziDAQ, BaseWidget):
-    def __init__(self):
+class ziDAQController(ziDAQ, Controller):
+    def __init__(self, formset):
         ziDAQ.__init__(self)
-        BaseWidget.__init__(self, 'ZI HF2LI')
+        Controller.__init__(self, formset, 'ZI HF2LI')
         self.set_margin(10)
-
-        # Time constant, frequency, sampling rate
-        self.tc_text = ControlText('Time Constant (s):')
-        self.tc_text.value = str(self.tc)
-        self.set_tc_button = ControlButton('Set')
-        self.set_tc_button.value = self._set_tc
-
-        self.freq_text = ControlText('Oscillator Frequency (Hz):')
-        self.freq_text.value = str(self.freq)
-        self.set_freq_button = ControlButton('Set')
-        self.set_freq_button.value = self._set_freq
-
-        self.rate_text = ControlText('Sampling Rate (Hz):')
-        self.rate_text.value = str(self.rate)
-        self.set_rate_button = ControlButton('Set')
-        self.set_rate_button.value = self._set_rate
-
-        # Action and error log
-        self._action_history = ControlTextArea('Action and Error Log')
-        self._action_history.readonly = True
-
-        #self.monitorThread = threading.Thread(name='Lockin Query Thread', target=self._monitor)
-        #self.monitorThread.daemon = True
-        #self.monitorThread.start()
-        self._update_history()
-
-        self._organization()
 
         # Signal in/out selectors
         #self._sigin_sele = ControlCombo()
@@ -59,6 +33,32 @@ class ziDAQController(ziDAQ, BaseWidget):
 
         #self.scopeThread = threading.Thread(target=self._plot_scope, args=[0])
         #self.scopeThread.start()
+
+    ############################################################################
+    # GUI Widgets
+
+    def _widgets(self):
+        # Action and error log from parent Controller class
+        Controller._widgets(self)
+
+        # Lockin time constant
+        self.tc_text = ControlText('Time Constant (s):')
+        self.tc_text.value = str(self.tc)
+        self.set_tc_button = ControlButton('Set')
+        self.set_tc_button.value = self._set_tc
+
+        # Oscillator frequency
+        self.freq_text = ControlText('Oscillator Frequency (Hz):')
+        self.freq_text.value = str(self.freq)
+        self.set_freq_button = ControlButton('Set')
+        self.set_freq_button.value = self._set_freq
+
+        # Sampling rate from demodulated signal
+        self.rate_text = ControlText('Sampling Rate (Hz):')
+        self.rate_text.value = str(self.rate)
+        self.set_rate_button = ControlButton('Set')
+        self.set_rate_button.value = self._set_rate
+
 
     ############################################################################
     # TC, frequency and sampling rate setters
@@ -105,37 +105,16 @@ class ziDAQController(ziDAQ, BaseWidget):
             self._scope_viewer.value = self.scope
 
     ############################################################################
-    # State monitoring and logging functions
+    # Overload Controller parent _status function
 
-    def _monitor(self):
-        while 1:
-            time.sleep(0.05)
-            si = self._sigin_sele.value
-            so = self._sigout_sele.value
-            if si != self.sigin:
-                self.sigin = si
-                self._update_history()
-            if so != self.sigout:
-                self.sigout = so
-                self._update_history
-
-    def _update_history(self):
-        t = time.asctime(time.localtime())
-        self._action_history += '%s: %s' % (t, self.last_action)
-
-    ############################################################################
-    # GUI organization
-
-    def _organization(self):
-        self.formset = [
-        #('', 'h5:Connection Selectors', ''),
-        #('_sigin_sele', '', '_sigout_sele'),
-        #('', 'h5:Oscilloscope Trace', ''),
-        #('', '_scope_viewer', ''),
-        ('', 'h5:Parameter Setting', ''),
-        ('tc_text', '', 'set_tc_button'),
-        ('freq_text', '', 'set_freq_button'),
-        ('rate_text', '', 'set_rate_button'),
-        ('', 'h5:Logs', ''),
-        ('_action_history')
-        ]
+    #def _status(self):
+        #while 1:
+            #time.sleep(0.05)
+            #si = self._sigin_sele.value
+            #so = self._sigout_sele.value
+            #if si != self.sigin:
+            #    self.sigin = si
+            #    self._update_history()
+            #if so != self.sigout:
+            #    self.sigout = so
+            #    self._update_history

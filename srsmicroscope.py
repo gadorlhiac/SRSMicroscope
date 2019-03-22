@@ -7,9 +7,9 @@ from pyforms.controls import ControlDir, ControlDockWidget
 import time
 
 class DirError(Exception):
-    """Exception for positioner error"""
+    """Exception for working directory error"""
     def __init__(self):
-        self.msg = 'Enter a proper working directory.'
+        self.msg = 'Enter a working directory error'
 
     def __str__(self):
         return self.msg
@@ -60,21 +60,28 @@ class SRSMicroscope(BaseWidget):
 
         self.mainmenu = [ { 'File' : [ { 'Save' : self.save } ] } ]
 
+        self.calibfile = 'calibration/t0_calibration.yaml'
+
     def _new_experiment(self):
+        tmp = ''
+        with open('calibration/formset.yaml') as f:
+            for line in f:
+                tmp += line
+            formset = yaml.load(tmp)
         try:
             if self._selector.dir == '':
                 raise DirError
             if self._selector.expmt == 0:
                 raise ExpmtError
             elif self._selector.expmt == 1:
-                self.expmt = BasicExperiment()
+                self.expmt = BasicExperiment(formset, self.calibfile, self._selector.dir)
                 self.expmt.parent = self._expmt_panel
                 self._expmt_panel.value = self.expmt
                 self.value = self.expmt
                 self._expmt_panel.show()
                 self._open_panel.hide()
             elif self._selector.expmt == 2:
-                self.expmt = Calibrator()
+                self.expmt = Calibrator(formset, self.calibfile, self._selector.dir)
                 self.expmt.parent = self._expmt_panel
                 self._expmt_panel.value = self.expmt
                 self.value = self.expmt
@@ -92,6 +99,8 @@ class SRSMicroscope(BaseWidget):
         with open('%s/%s_ExpmtLog' % (self._selector.dir, date), 'w') as f:
             f.write(self.expmt.expmt_history.value)
 
-
+    def closeEvent(self, event):
+        self.expmt.beforeClose()
+        super(BaseWidget, self).closeEvent(event)
 
 if __name__ == "__main__" : pyforms.start_app(SRSMicroscope)
