@@ -14,6 +14,13 @@ from pyforms.controls import ControlText, ControlButton, ControlLabel
 from pyforms.controls import ControlTextArea
 
 class ziDAQController(ziDAQ, Controller):
+    """
+    Extended zidaq controller.  Inherits from controller and zidaq server for
+    integration of gui elements and ziDAQ server lockin.
+
+    Args:
+        formset (dict/list): dictionary/list for GUI organization.
+    """
     def __init__(self, formset):
         ziDAQ.__init__(self)
         Controller.__init__(self, formset, 'ZI HF2LI')
@@ -38,6 +45,7 @@ class ziDAQController(ziDAQ, Controller):
     # GUI Widgets
 
     def _widgets(self):
+        """ziDAQ GUI items for demodulation parameters"""
         # Action and error log from parent Controller class
         Controller._widgets(self)
 
@@ -64,6 +72,7 @@ class ziDAQController(ziDAQ, Controller):
     # TC, frequency and sampling rate setters
 
     def _set_tc(self):
+        """Set the lockin demodulator time constant"""
         try:
             self.tc = float(self.tc_text.value.strip())
             self.tc_text.value = str(self.tc)
@@ -73,6 +82,7 @@ class ziDAQController(ziDAQ, Controller):
             self._update_history()
 
     def _set_freq(self):
+        """Set the lockin oscillator frequency"""
         try:
             self.freq = float(self.freq_text.value.strip())
             self.freq_text.value = str(self.freq)
@@ -82,6 +92,7 @@ class ziDAQController(ziDAQ, Controller):
             self._update_history()
 
     def _set_rate(self):
+        """Set the sampling rate of the demodulated signal"""
         try:
             self.rate = float(self.rate_text.value.strip())
             self.rate_text.value = str(self.rate)
@@ -94,11 +105,26 @@ class ziDAQController(ziDAQ, Controller):
     # Polling functions
 
     def poll(self, poll_length=0.05, timeout=500, tc=1e-3):
-        x, y = self._poll(poll_length, timeout, tc)
+        """
+        Poll the demodulator for a set time.
+
+        Args:
+            poll_length (float): how long to poll. Units: (s)
+            timeout (int): timeout period for response from server. Units (ms)
+            tc (float): demodulator time constant with which to poll. Units (s)
+
+        Returns:
+            x (np array): demodulator x values over polling period.
+            y (np array): demodulator y values over polling period.
+            frame (np array): auxilary in 0 values.  Currently configured to olympus frame clock.
+            line (np array): auxilary in 1 values. Currently configured to olympus line clock.
+        """
+        x, y, frame, line = self._poll(poll_length, timeout, tc)
         self._update_history()
-        return x, y
+        return x, y, frame, line
 
     def _plot_scope(self, channel):
+        """Plot the oscilloscope trace of input.  Not in use."""
         while 1:
             time.sleep(0.05)
             self._poll_scope(channel)

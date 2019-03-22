@@ -56,6 +56,13 @@ class CommandError(Exception):
         return self.msg
 
 class DelayStage(Device):
+    """
+    Facilitates serial communication with newport delay stage.
+
+    Args:
+        port (str): COM for serial communication.  This is a windows feature.
+        com_time (float): wait time to allow read/write of serial commands.
+    """
     def __init__(self, port=None, com_time=0.1):
         # Initialize serial communications with port and open that port
         Device.__init__(self, port)
@@ -99,6 +106,7 @@ class DelayStage(Device):
 
     # Re-enter READY state
     def enable(self):
+        """Enter delay stage READY state to allow for motion."""
         try:
             self.write(b'1MM1', self._com_time)
             tmp = self.read()
@@ -113,6 +121,7 @@ class DelayStage(Device):
 
     # Enter DISABLE state
     def disable(self):
+        """Enter delay stage disable state."""
         try:
             self.write(b'1MM0', self._com_time)
             tmp = self.read()
@@ -126,6 +135,7 @@ class DelayStage(Device):
             self.last_action = 'Unknown error. %s' % (str(e))
 
     def home(self):
+        """Home the delay stage.  Home position is a system parameter."""
         # 'Home' the delay stage and get current position,
         # a value from -100 to 100 mm
         try:
@@ -146,6 +156,7 @@ class DelayStage(Device):
     # that the first 4 characters correspond to an error code and the last 2
     # to the state of the device.
     def query_state(self):
+        """Get current positioner errors and state."""
         self.write(b'1TS', self._com_time)
         line = self.read()
         self._pos_error = line[3:7]
@@ -153,6 +164,7 @@ class DelayStage(Device):
 
     @property
     def state(self):
+        """Property to return the current state of the delay stage"""
         try:
             return self._states[self._state]
         except KeyError as e:
@@ -166,6 +178,7 @@ class DelayStage(Device):
     # Read last command error, and query state to see if there are positioner
     # errors
     def check_errors(self):
+        """Check for command errors and also call query_state"""
         self.write(b'1TE', self._com_time) # Last command error
         self._cmd_error = self.read()[3:].strip()
         if self._cmd_error != '@':
@@ -185,12 +198,23 @@ class DelayStage(Device):
 
     @property
     def pos(self):
+        """
+        Property for delay stage position.  Writes to stage to get current
+        position.
+        """
         self.write(b'1TP?', self._com_time)
         self._pos = float(self.read()[3:])
         return self._pos
 
     @pos.setter
     def pos(self, val):
+        """
+        Delay stage position setter.  Writes to delay stage to move and reads
+        back actual position.
+
+        Args:
+            val (float): absolute delay stage position to move to (-100, 100). Units (mm).
+        """
         try:
             relative_move = np.abs(val - self._pos)
             self.write(b'1PT%f' % relative_move, self._com_time)
@@ -217,6 +241,7 @@ class DelayStage(Device):
 
     # Stop any motion
     def stop_motion(self):
+        """Stop currently moving delay stage"""
         try:
             self.write(b'1ST', self._com_time)
             tmp = self.read()
@@ -242,12 +267,23 @@ class DelayStage(Device):
 
     @property
     def vel(self):
+        """
+        Property for delay stage velocity.  Writes to stage to get current
+        velocity.
+        """
         self.write(b'1VA?', self._com_time)
         self._vel = float(self.read()[3:])
         return self._vel
 
     @vel.setter
     def vel(self, val):
+        """
+        Delay stage velocity setter.  Writes to delay stage to change and reads
+        back actual velocity.
+
+        Args:
+            val (float): delay stage velocity. Units (mm/s)
+        """
         try:
             self.write(b'1VA%f' % val, self._com_time)
             tmp = self.read()
@@ -273,12 +309,23 @@ class DelayStage(Device):
 
     @property
     def accel(self):
+        """
+        Property for delay stage acceleration.  Writes to stage to get current
+        acceleration.
+        """
         self.write(b'1AC?', self._com_time)
         self._accel = float(self.read()[3:])
         return self._accel
 
     @accel.setter
     def accel(self, val):
+        """
+        Delay stage acceleration setter.  Writes to delay stage to change and reads
+        back actual acceleration.
+
+        Args:
+            val (float): delay stage acceleration. Units (mm/s2)
+        """
         try:
             self.write(b'1AC%f' % val, self._com_time)
             tmp = self.read()

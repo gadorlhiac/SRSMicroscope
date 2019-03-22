@@ -5,7 +5,7 @@ expmt:
   ZI Lock-in Controls: [_zidaq_panel]
 insight:
 - !!python/tuple ['', 'h5:Laser Operation', '']
-- !!python/tuple [_emission_button, _main_shutter_button, _fixed_shutter_button]
+- !!python/tuple [emission_button, main_shutter_button, fixed_shutter_button]
 - !!python/tuple ['', 'h5:Wavelength Selection', '']
 - !!python/tuple [_main_wl_label]
 - !!python/tuple [tune_wl_val, '', tune_wl_button]

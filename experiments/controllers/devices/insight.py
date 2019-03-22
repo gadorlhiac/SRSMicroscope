@@ -27,6 +27,13 @@ class OperationError(Exception):
         return self.msg
 
 class Insight(Device):
+    """
+    Facilitates serial communication with Insight DS+ laser.
+
+    Args:
+        port (str): COM for serial communication.  This is a windows feature.
+        com_time (float): wait time to allow read/write of serial commands.
+    """
     def __init__(self, port=None, com_time=0.1):
         # Initialize serial communications with port and open that port
         Device.__init__(self, port)
@@ -97,6 +104,7 @@ class Insight(Device):
     # Laser on/off
 
     def turnon(self):
+        """Turn laser on."""
         try:
             self.write(b'ON', self._com_time)
             self.check_errors()
@@ -107,6 +115,7 @@ class Insight(Device):
             self.last_action = 'Error turning on: %s' % (str(e))
 
     def turnoff(self):
+        """Turn laser off.  Enters hibernate mode"""
         try:
             self.write(b'OFF', self._com_time)
             self.check_errors()
@@ -122,6 +131,7 @@ class Insight(Device):
     # Read errors is same command as query state but separate functions to allow
     # flexibility in error handling
     def query_state(self):
+        """Gets current state and any errors."""
         self.write(b'*STB?', self._com_time)
         s = int(self.read())
         masked = s & 0x007F0000
@@ -131,6 +141,7 @@ class Insight(Device):
         return s
 
     def check_errors(self):
+        """As query state, but returns more information"""
         full_state = self.query_state()
         try:
             masks = [0x00000200, 0x00000400, 0x00000800, 0x00001000, 0x00004000,
@@ -149,6 +160,7 @@ class Insight(Device):
             return full_state
 
     def read_history(self):
+        """Reads error code history from the insight startup buffer"""
         # Note: The Insight manual in the description of the serial commands
         # lists the history code as 'READ:HIStory?'. This is incorrect.
         # Appendix B, where the codes are explained cites the correct code:
@@ -167,6 +179,7 @@ class Insight(Device):
 
     # Number of diode on hours
     def laser_hrs(self):
+        """Reads the laser diode hours"""
         self.write(b'READ:PLASer:DIODe1:HOURS?', self._com_time)
         self.diode1_hrs = self.read().strip()
         self.write(b'READ:PLASer:DIODe2:HOURS?', self._com_time)
@@ -174,6 +187,7 @@ class Insight(Device):
 
     # Temperature, humidity and diode current
     def laser_stats(self):
+        """Reads temperature, humidity and current"""
         self.write(b'READ:PLASer:DIODe1:TEMPerature?', self._com_time)
         self.diode1_temp = self.read().strip()
         self.write(b'READ:PLASer:DIODe2:TEMPerature?', self._com_time)
@@ -194,6 +208,7 @@ class Insight(Device):
     # Current laser status
     @property
     def state(self):
+        """Property to return current state in text form"""
         if self._state < 25:
             return self._states[0]
         elif self._state == 25:
@@ -214,10 +229,17 @@ class Insight(Device):
     # For OPO tuning
     @property
     def opo_wl(self):
+        """Property to return current OPO wl"""
         return self._opo_wl
 
     @opo_wl.setter
     def opo_wl(self, val):
+        """
+        OPO wavelength setter.  Writes to change, and reads back current wavelength
+        as well as the new DeepSee position.
+        Args:
+            val (int): Wavelength, 680-1300.
+        """
         try:
             self.write(b'WAVelength %i' % (val), self._com_time + 2)
             self.check_errors()
@@ -241,10 +263,17 @@ class Insight(Device):
     # Shutter control
     @property
     def main_shutter(self):
+        """Property for main shutter status.  Returns 1 if open"""
         return self._main_shutter
 
     @main_shutter.setter
     def main_shutter(self, val):
+        """
+        Main shutter setter.  Opens or closes the shutter.
+
+        Args:
+            val (int): 0 for close, 1 for open.
+        """
         msg = ['closed.', 'opened.']
         try:
             self.write(b'SHUTter %i' % (val), self._com_time)
@@ -258,10 +287,17 @@ class Insight(Device):
 
     @property
     def fixed_shutter(self):
+        """Property for fundamental shutter status. Returns 1 if open"""
         return self._fixed_shutter
 
     @fixed_shutter.setter
     def fixed_shutter(self, val):
+        """
+        Fundamental shutter setter.  Opens or closes the shutter.
+
+        Args:
+            val (int): 0 for close, 1 for open.
+        """
         msg = ['closed.', 'opened.']
         try:
             self.write(b'IRSHUTter %i' % (val), self._com_time)
@@ -279,12 +315,19 @@ class Insight(Device):
     # Get current DeepSee position
     @property
     def dsmpos(self):
+        """Property to get the current DeepSee motor position"""
         self.write(b'CONT:DSMPOS?', self._com_time)
         self._dsmpos = self.read().strip()
         return self._dsmpos
 
     @dsmpos.setter
     def dsmpos(self, val):
+        """
+        DeepSee motor position setter.  Will not move beyond wavelength dependent min/max values.
+
+        Args:
+            val (str): string of a float position from 0 - 100.  Not clear units.
+        """
         try:
             self.write(b'CONT:DSMPOS %s' % (val), self._com_time)
             self.check_errors()
@@ -298,12 +341,14 @@ class Insight(Device):
 
     @property
     def dsmmin(self):
+        """Return DeepSee motor min position for current wavelength."""
         self.write(b'CONT:SLMIN?', self._com_time)
         self._dsmmin = self.read().strip()
         return self._dsmmin
 
     @property
     def dsmmax(self):
+        """Return DeepSee motor max position for current wavelength."""
         self.write(b'CONT:SLMAX?', self._com_time)
         self._dsmmax = self.read().strip()
         return self._dsmmax

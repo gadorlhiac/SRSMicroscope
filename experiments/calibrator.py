@@ -9,11 +9,20 @@ import yaml
 import time
 
 class Calibrator(BaseWidget):
+    """
+    Extended experiment class for wavelength vs stage delay.
+
+    Args:
+        formset (dict/list): dictionary/list for GUI organization.
+        calibfile (str): path to yaml file for calibration, e.g., time 0.
+        logdir (str): path for working directory
+    """
     def __init__(self, formset, calibfile, logdir):
         Experiment.__init__(self, formset, calibfile, logdir)
         self.set_margin(10)
 
     def _expmt_widgets(self):
+        """Experiment specific GUI objects.  Separate from device GUI objects"""
         # Experiment history log from parent Experiment class
         Experiment._expmt_widgets(self)
 
@@ -30,6 +39,7 @@ class Calibrator(BaseWidget):
     # Functions for optimizing signal vs delay stage position
 
     def _get_wavelength_range(self):
+        """Parse user specified wavelength calibration range"""
         text = self._wl_range_text.value
         wlrange = text.split('-')
         wlmin = int(wlrange[0])
@@ -37,10 +47,15 @@ class Calibrator(BaseWidget):
         return np.linspace(wlmin, wlmax, wlmin-wlmax+1)
 
     def _calibrator(self):
+        """Start calibration thread with target _calibrate"""
         self._calibratorThread = threading.Thread(target=self._calibrate)
         self._calibratorThread.start()
 
     def _calibrate(self):
+        """
+        Call parent _optimize iteratively over wavelength range specified.
+        Use current calibration as starting position, if not guess
+        """
         wls = self._get_wavelength_range()
         for i, wl in enumerate(wls):
             self.insight.tune_wl_val.value = str(int(wl))

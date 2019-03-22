@@ -95,9 +95,9 @@ class SRSMicroscope(BaseWidget):
 
     def save(self):
         tmp = time.localtime()[0:3]
-        date = '%i-%i-%i' % (tmp[0], tmp[1], tmp[2])
-        with open('%s/%s_ExpmtLog' % (self._selector.dir, date), 'w') as f:
-            f.write(self.expmt.expmt_history.value)
+    #    date = '%i-%i-%i' % (tmp[0], tmp[1], tmp[2])
+    #    with open('%s/%s_ExpmtLog' % (self._selector.dir, date), 'w') as f:
+    #        f.write(self.expmt.expmt_history.value)
 
     def closeEvent(self, event):
         self.expmt.beforeClose()

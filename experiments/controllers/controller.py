@@ -7,6 +7,13 @@ from pyforms.controls import ControlText, ControlButton, ControlLabel
 from pyforms.controls import ControlTextArea
 
 class Controller(BaseWidget):
+    """
+    Base class Controller.  Integrates GUI elements with device/server control.
+
+    Args:
+        formset (dict/list): dictionary/list for GUI organization.
+        title (str): name of GUI window.
+    """
     def __init__(self, formset, title='Controller'):
         BaseWidget.__init__(self, title)
         self.set_margin(10)
@@ -29,6 +36,7 @@ class Controller(BaseWidget):
     # GUI Widgets
 
     def _widgets(self):
+        """Basic device GUI items"""
         self._action_history = ControlTextArea('Action and Error Log')
         self._action_history.readonly = True
 
@@ -37,6 +45,7 @@ class Controller(BaseWidget):
     # Logging
 
     def _update_history(self):
+        """Update device's action history"""
         try:
             t = time.asctime(time.localtime())
             self._action_history += '%s: %s' % (t, self.last_action)
@@ -45,8 +54,10 @@ class Controller(BaseWidget):
 
     @property
     def action_history(self):
+        """Property to return action history"""
         return self._action_history
 
     def _status(self):
+        """Empty device status function"""
         while 1:
             pass

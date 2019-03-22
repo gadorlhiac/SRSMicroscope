@@ -13,6 +13,9 @@ class APIError(Exception):
         return self.msg
 
 class ziDAQ(object):
+    """
+    Facilitates control of the ZI HFL2I lockin amplifier.  Uses the server API.
+    """
     def __init__(self):
         self._name = ''
         self._scope = []
@@ -44,6 +47,7 @@ class ziDAQ(object):
     # Lockin device discovery functions and settings initiliazation.
 
     def _discover(self):
+        """Run API discovery routines, and return port and apilevel to allow connection"""
         try:
             disc = ziPython.ziDiscovery()
             device = disc.findAll()[0]
@@ -59,6 +63,10 @@ class ziDAQ(object):
             return 8005, 1
 
     def _load_settings(self):
+        """
+        Try to load settings for oscillator/demodulator/server.
+        Default settings hard coded if not found.
+        """
         try:
             with open('calibration/lockin.yaml') as f:
                 tmp = ''
@@ -90,6 +98,10 @@ class ziDAQ(object):
             return settings, msg
 
     def _get_config(self):
+        """
+        Get the current lockin oscillator frequency, demodulator time constant
+        and sampling rate of the demodulated signal.
+        """
         try:
             self._tc = self.server.getDouble('/%s/demods/0/timeconstant' % (self._name))
             self._rate = self.server.getDouble('/%s/demods/0/rate' % (self._name))
@@ -101,6 +113,20 @@ class ziDAQ(object):
     # Polling functions for data retrieval.
 
     def _poll(self, poll_length=0.05, timeout=500, tc=1e-3):
+        """
+        Poll the demodulator and record the data.
+
+        Args:
+            poll_length (float): how long to poll. Units: (s)
+            timeout (int): timeout period for response from server. Units (ms)
+            tc (float): demodulator time constant with which to poll. Units (s)
+
+        Returns:
+            x (np array): demodulator x values over polling period.
+            y (np array): demodulator y values over polling period.
+            frame (np array): auxilary in 0 values.  Currently configured to olympus frame clock.
+            line (np array): auxilary in 1 values. Currently configured to olympus line clock.
+        """
         flat_dictionary_key = True
         path = '/%s/demods/0' % (self._name)
 
@@ -115,9 +141,9 @@ class ziDAQ(object):
             if '%s/sample' % (path) in data:
                 x = np.array(data['%s/sample' % (path)]['x'])
                 y = np.array(data['%s/sample' % (path)]['y'])
-            else:
-                x = 0
-                y = 0
+                frame = np.array(data['%s/sample' % (path)]['auxin0'])
+                line = np.array(data['%s/sample' % (path)]['auxin1'])
+
             self.last_action = 'Polled for %f s and time constant %f s' \
                                                             % (poll_length, tc)
         except Exception as e:
@@ -126,9 +152,10 @@ class ziDAQ(object):
         self.server.setDouble('%s/timeconstant' % (path), self._tc)
         self.server.sync()
 
-        return x, y
+        return x, y, frame, line
 
     def _poll_scope(self, channel):
+        """Poll the oscilloscope.  Not currently in use."""
         try:
             path = '/%s/scopes/0/wave' % (self._name)
             self.server.subscribe(path)
@@ -146,6 +173,7 @@ class ziDAQ(object):
     # API errors
 
     def _check_api_errors(self):
+        """Check if any API errors were found"""
         try:
             e = self.server.getLastError()
             if e != '':
@@ -162,10 +190,17 @@ class ziDAQ(object):
     # Lockin time constant
     @property
     def tc(self):
+        """Property to return current demodulator time constant."""
         return self._tc
 
     @tc.setter
     def tc(self, val):
+        """
+        Time constant setter.
+
+        Args:
+            val (float): demodulator time constant. Units (s)
+        """
         self.server.setDouble('/%s/demods/0/timeconstant' % (self._name), val)
         self.server.sync()
 
@@ -175,10 +210,17 @@ class ziDAQ(object):
     # Lockin oscillator frequency
     @property
     def freq(self):
+        """Property to return current oscillator frequency."""
         return self._freq
 
     @freq.setter
     def freq(self, val):
+        """
+        Oscillator frequency setter.
+
+        Args:
+            val (float): oscillator frequency. Units (Hz)
+        """
         self.server.setDouble('/%s/oscs/0/freq' % (self._name), val)
         self.server.sync()
 
@@ -188,10 +230,17 @@ class ziDAQ(object):
     # Lockin sampling rate
     @property
     def rate(self):
+        """Property to return current sampling rate of demodulated signal."""
         return self._rate
 
     @rate.setter
     def rate(self, val):
+        """
+        Sampling rate setter.
+
+        Args:
+            val (float): sampling rate of demodulated signal. Units (Sa/s)
+        """
         self.server.setDouble('/%s/demods/0/rate' % (self._name), val)
         self.server.sync()
 
@@ -203,19 +252,23 @@ class ziDAQ(object):
 
     @property
     def sigin(self):
+        """Return current signal input channel.  Not in use."""
         return self._sigin
 
     @sigin.setter
     def sigin(self, val):
+        """Set current signal input channel. Not in use."""
         self._sigin = val
         self.last_action = 'Signal input changed to channel %d.' % (val+1)
 
     @property
     def sigout(self):
+        """Return current signal output channel.  Not in use."""
         return self._sigout
 
     @sigout.setter
     def sigout(self, val):
+        """Set current signal output channel. Not in use."""
         self._sigout = val
         self.last_action = 'Signal output changed to channel %d.' % (val+1)
 
@@ -224,6 +277,7 @@ class ziDAQ(object):
 
     @property
     def scope(self):
+        """Return the oscilloscope trace."""
         return self._scope
 
     @property
@@ -252,6 +306,10 @@ class ziDAQ(object):
 # access the demodulator data:
 #x = data['/dev123/demods/0/sample']['x']
 #y = data['/dev123/demods/0/sample']['y']
+#frame = data['/dev123/demods/0/sample']['auxin0']
+#line = data['/dev123/demods/0/sample']['auxin1']
+#dataloss = '/dev123/status/demodsampleloss'
+#clipping = '/dev123/status/adcclip/0'
 
 
     #desired_t_shot = 10./frequency

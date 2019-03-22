@@ -12,6 +12,12 @@ class ComError(Exception):
         return self.msg
 
 class Device(object):
+    """
+    Base device class. Opens serial communications.
+
+    Args:
+        port (str): COM port.  Windows assumed.
+    """
     num_devices = 0
     def __init__(self, port = None):
         # Communication port must be provided or initialization will fail
@@ -32,16 +38,26 @@ class Device(object):
             pass
 
     def open_com(self):
+        """Open the communication port"""
         self.com.open()
 
     def close_com(self):
+        """Close the communication port"""
         self.com.close()
 
     def write(self, command, waittime):
+        """
+        Write serial command. Includes newline character.
+
+        Args:
+            command (bytes): serial command string as byte type. b''
+            waittime (float): time to wait after write before read. Units (s)
+        """
         # Commands from sub-class devices don't need to include the newline
         # character as it is included here
         self.com.write(b'%b\n' % (command))
         time.sleep(waittime)
 
     def read(self):
+        """Return a readline from serial buffer as string"""
         return self.com.readline().decode('ascii')

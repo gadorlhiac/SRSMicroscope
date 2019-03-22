@@ -9,6 +9,15 @@ from pyforms.controls import ControlText, ControlButton, ControlLabel
 from pyforms.controls import ControlTextArea
 
 class InsightController(Insight, Controller):
+    """
+    Extended Insight controller.  Inherits from controller and insight device for
+    integration of gui elements and insight ds+ laser control.
+
+    Args:
+        port (str): COM for serial communication.  This is a windows feature.
+        com_time (float): wait time to allow read/write of serial commands.
+        formset (dict/list): dictionary/list for GUI organization.
+    """
     def __init__(self, port, com_time, formset):
         Insight.__init__(self, port=port, com_time=com_time)
         Controller.__init__(self, formset, 'Insight DS+ Controls')
@@ -23,23 +32,24 @@ class InsightController(Insight, Controller):
     # GUI Widgets
 
     def _widgets(self):
+        """Insight GUI items for operation and status display"""
         # Action and error log from parent Controller class
         Controller._widgets(self)
 
         # Emission and shutter operation
-        self._emission_button = ControlButton('Laser Off')
-        self._emission_button.value = self._emission
-        self._main_shutter_button = ControlButton('Main Shutter Closed')
-        self._main_shutter_button.value = self._main_shutter_control
-        self._fixed_shutter_button = ControlButton('1040 nm Shutter Closed')
-        self._fixed_shutter_button.value = self._fixed_shutter_control
+        self.emission_button = ControlButton('Laser Off')
+        self.emission_button.value = self._emission
+        self.main_shutter_button = ControlButton('Main Shutter Closed')
+        self.main_shutter_button.value = self._main_shutter_control
+        self.fixed_shutter_button = ControlButton('1040 nm Shutter Closed')
+        self.fixed_shutter_button.value = self._fixed_shutter_control
 
         # OPO Tuning
-        self._main_wl_label = ControlLabel('Main Wavelength (nm): %s' \
-                                                            % str(self.opo_wl))
         self.tune_wl_val = ControlText('Set Wavelength (nm):')
         self.tune_wl_button = ControlButton('Set')
         self.tune_wl_button.value = self._tune_wl
+        self._main_wl_label = ControlLabel('Main Wavelength (nm): %s' \
+                                                            % str(self.opo_wl))
 
         # Define statistics displays
         self._stats_labels()
@@ -51,6 +61,7 @@ class InsightController(Insight, Controller):
         self._code_history.readonly = True
 
     def _stats_labels(self):
+        """Defines the stats widgets, called in _widgets"""
         self._diode1_hrs_label = ControlLabel('Diode 1 Hours: \
                                                 %s' % (self.diode1_hrs))
         self._diode2_hrs_label = ControlLabel('Diode 2 Hours: \
@@ -68,34 +79,37 @@ class InsightController(Insight, Controller):
     # Laser on/off and shutter control
 
     def _emission(self):
-        if self._emission_button.label == 'Laser Off':
+        """Turns the laser on or off"""
+        if self.emission_button.label == 'Laser Off':
             self.turnon()
         else:
             self.turnoff()
-            self._emission_button.label = 'Laser Off'
-            self._emission_button._form.setStyleSheet(self._button_off)
+            self.emission_button.label = 'Laser Off'
+            self.emission_button._form.setStyleSheet(self._button_off)
         self._update_history()
 
     def _main_shutter_control(self):
+        """Opens the shutter for the OPO output."""
         if self.main_shutter == 0:
             self.main_shutter = 1
-            self._main_shutter_button.label = 'Main Shutter Open'
-            self._main_shutter_button._form.setStyleSheet(self._button_on)
+            self.main_shutter_button.label = 'Main Shutter Open'
+            self.main_shutter_button._form.setStyleSheet(self._button_on)
         else:
             self.main_shutter = 0
-            self._main_shutter_button.label = 'Main Shutter Closed'
-            self._main_shutter_button._form.setStyleSheet(self._button_off)
+            self.main_shutter_button.label = 'Main Shutter Closed'
+            self.main_shutter_button._form.setStyleSheet(self._button_off)
         self._update_history()
 
     def _fixed_shutter_control(self):
+        """Opens the shutter for the fundamental output."""
         if self.fixed_shutter == 0:
             self.fixed_shutter = 1
-            self._fixed_shutter_button.label = '1040 nm Shutter Open'
-            self._fixed_shutter_button._form.setStyleSheet(self._button_on)
+            self.fixed_shutter_button.label = '1040 nm Shutter Open'
+            self.fixed_shutter_button._form.setStyleSheet(self._button_on)
         else:
             self.fixed_shutter = 0
-            self._fixed_shutter_button.label = '1040 nm Shutter Closed'
-            self._fixed_shutter_button._form.setStyleSheet(self._button_off)
+            self.fixed_shutter_button.label = '1040 nm Shutter Closed'
+            self.fixed_shutter_button._form.setStyleSheet(self._button_off)
         self._update_history()
 
 
@@ -103,6 +117,7 @@ class InsightController(Insight, Controller):
     # Laser tuning
 
     def _tune_wl(self):
+        """Tunes OPO wavelength"""
         self.opo_wl = int(self.tune_wl_val.value.strip())
         self._update_history()
         self._main_wl_label.value = 'Main Wavelength (nm): %s' % (str(self.opo_wl))
@@ -112,22 +127,26 @@ class InsightController(Insight, Controller):
     # insight
 
     def _status(self):
+        """
+        Checks laser status to see if running or shutters open.  Updates stats
+        every 30s or 10 minutes
+        """
         count = 1 # Counter to see if we should update stats or code history.
         while 1:
             time.sleep(2)
             full_state = self.check_errors()
             self._state_label.value = self.state
             if self.state == 'RUN':
-                self._emission_button.label = 'Laser On'
-                self._emission_button._form.setStyleSheet(self._button_on)
+                self.emission_button.label = 'Laser On'
+                self.emission_button._form.setStyleSheet(self._button_on)
 
             if self.main_shutter == 1:
-                self._main_shutter_button.label = 'Main Shutter Open'
-                self._main_shutter_button._form.setStyleSheet(self._button_on)
+                self.main_shutter_button.label = 'Main Shutter Open'
+                self.main_shutter_button._form.setStyleSheet(self._button_on)
 
             if self.fixed_shutter == 1:
-                self._fixed_shutter_button.label = '1040 nm Shutter Open'
-                self._fixed_shutter_button._form.setStyleSheet(self._button_on)
+                self.fixed_shutter_button.label = '1040 nm Shutter Open'
+                self.fixed_shutter_button._form.setStyleSheet(self._button_on)
 
             count += 1
             if count % 15 == 0: # Every 30 s
@@ -141,6 +160,7 @@ class InsightController(Insight, Controller):
                 count = 1
 
     def _update_code_history(self):
+        """Writes the error code history"""
         t = time.asctime(time.localtime())
         string = self.read_history()
         self._code_history += 'Time of buffer reading: %s\n %s' \
@@ -149,4 +169,5 @@ class InsightController(Insight, Controller):
 
     @property
     def code_history(self):
+        """Property to retrieve the error code history"""
         return self._code_history
