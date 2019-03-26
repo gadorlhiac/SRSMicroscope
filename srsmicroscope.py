@@ -6,6 +6,9 @@ from experiments.controllers.gui.ControlCombo import *
 from pyforms.controls import ControlDir, ControlDockWidget
 import time
 
+from AnyQt.QtWidgets import QApplication
+
+
 class DirError(Exception):
     """Exception for working directory error"""
     def __init__(self):
@@ -49,6 +52,7 @@ class SRSMicroscope(BaseWidget):
         BaseWidget.__init__(self, 'SRS Microscope')
         self.set_margin(10)
 
+        self.expmt = None
         self._open_panel = ControlDockWidget()
         self._selector = Selector()
         self._selector._start_button.value = self._new_experiment
@@ -104,3 +108,5 @@ class SRSMicroscope(BaseWidget):
         super(BaseWidget, self).closeEvent(event)
 
 if __name__ == "__main__" : pyforms.start_app(SRSMicroscope)
+    #q = Queue()
+    #p = Process(target=app.expmt._acquire)

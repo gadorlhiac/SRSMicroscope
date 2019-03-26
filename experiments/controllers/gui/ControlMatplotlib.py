@@ -28,52 +28,58 @@ elif _api.USED_API == _api.QT_API_PYQT4:
 
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 
 
 
 class ControlMatplotlib(ControlBase, QWidget):
     def __init__(self, *args, **kwargs):
-        #self._value = kwargs.get('value')
+        self._value = kwargs.get('value')
         QWidget.__init__(self)
         ControlBase.__init__(self, *args, **kwargs)
 
     def init_form(self):
         plt.ion()
         self._fig = Figure()
-        self.axes = self._fig.add_subplot(111)
-        self.canvas = FigureCanvas(self._fig)
-        self.canvas.setParent(self)
-        self.mpl_toolbar = NavigationToolbar(self.canvas, self)
+        self._ax = self._fig.add_subplot(111)
+        self._img = self._ax.imshow(np.zeros([512,512]))
+        self._canvas = FigureCanvas(self._fig)
+        self._canvas.setParent(self)
+        self._mpl_toolbar = NavigationToolbar(self._canvas, self)
+        self._cb = self._fig.colorbar(self._img)
+        self._cb.formatter.set_useOffset(False)
+        self._cb.update_ticks()
 
         vbox = QVBoxLayout()
-        vbox.addWidget(self.canvas)
-        vbox.addWidget(self.mpl_toolbar)
+        vbox.addWidget(self._canvas)
+        vbox.addWidget(self._mpl_toolbar)
         self.setLayout(vbox)
         self.on_draw()
 
-    def draw(self):
-        self.on_draw()
-        self.canvas.draw()
-
     def on_draw(self):
-        self.axes.cla()
-        self.axes.plot(self._value)
-        self.canvas.draw()
+        self._img.set_data(self._value)
+        self._img.autoscale()
+        self._canvas.draw()
+        self.repaint()
 
+    def read_daq(self, newData):
+        self._value = newData
+        self.on_draw()
 
     ############################################################################
     ############ Properties ####################################################
     ############################################################################
 
     @property
-    def form(self): return self
+    def form(self):
+        return self
 
 
     @property
-    def value(self): return self._value
+    def value(self):
+        return self._value
 
     @value.setter
     def value(self, value):
         self._value = value
-        self.draw()
+        if self._value.any():
+            self.on_draw()

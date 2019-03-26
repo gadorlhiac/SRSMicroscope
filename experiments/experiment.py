@@ -4,6 +4,7 @@ from .controllers.zidaqcontroller import *
 from pyforms.controls import ControlButton, ControlEmptyWidget
 from .experiment import *
 from .util.data import *
+from multiprocessing import Queue
 import yaml
 import time
 
@@ -26,6 +27,7 @@ class Experiment(BaseWidget):
         self._calibfile = 'calibration/t0_calibration.yaml'
         self._calib_dict = {}
 
+        self._daq_queue = Queue()
         self._data = Data(self._logdir)
 
         self._insight_panel = ControlEmptyWidget(margin=10)
@@ -35,19 +37,19 @@ class Experiment(BaseWidget):
 
         self._insight = InsightController('COM6', 0.07, formset['insight'])
         self._insight.parent = self
-        self._insight_panel.value = self.insight
+        self._insight_panel.value = self._insight
 
         self._delaystage = StageController('COM7', 0.05, formset['stage'])
         self._delaystage.parent = self
-        self._stage_panel.value = self.delaystage
+        self._stage_panel.value = self._delaystage
 
         self._zidaq = ziDAQController(formset['zidaq'])
         self._zidaq.parent = self
-        self._zidaq_panel.value = self.zidaq
+        self._zidaq_panel.value = self._zidaq
 
         # Organization and parameter initialization
         self._expmt_widgets()
-        self._load_calibration(self.calibfile)
+        self._load_calibration(self._calibfile)
 
         self.formset = formset['expmt']
 
@@ -137,12 +139,12 @@ class Experiment(BaseWidget):
         # data object stores its own copies of log files
         logs = {}
         logs['zidaq'] = self._zidaq.action_history
-        logs['stage'] = self._stage.action_history
+        logs['stage'] = self._delaystage.action_history
         logs['insight'] = self._insight.action_history
         logs['insight'] += '\n\n ----Beginning Code History----\n\n'
         logs['insight'] +=  self._insight.code_history
         logs['expmt'] = self._expmt_history
-        self.data.close(logs)
+        self._data.close(logs)
 
         # Write out text logs as well
         with open('%s/log_zidaq.txt' % (self._logdir), 'w') as f:

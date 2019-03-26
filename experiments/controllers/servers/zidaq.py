@@ -4,6 +4,7 @@ import numpy as np
 import time
 import zhinst.ziPython as ziPython
 import yaml
+from AnyQt.QtCore import pyqtSignal, QObject
 
 class APIError(Exception):
     def __init__(self, error):
@@ -12,13 +13,18 @@ class APIError(Exception):
     def __str__(self):
         return self.msg
 
-class ziDAQ(object):
+class ziDAQ(QObject):
     """
     Facilitates control of the ZI HFL2I lockin amplifier.  Uses the server API.
     """
+    daqData = pyqtSignal(np.ndarray)
     def __init__(self):
+        QObject.__init__(self)
         self._name = ''
         self._scope = []
+        self._settings = {}
+
+        self._daq = None
 
         self._sigin = 0
         self._sigout = 0
@@ -33,11 +39,13 @@ class ziDAQ(object):
             self.server = ziPython.ziDAQServer('localhost', port, apilevel)
             self.server.connect()
 
-            settings, msg = self._load_settings()
-            self.server.set(settings)
+            msg = self._load_settings()
+            self.server.set(self._settings['server'])
             self.server.sync()
 
             self._get_config()
+
+            self._daq = self.server.dataAcquisitionModule()
 
             self.last_action = 'Lockin found, %s' % (msg)
         except Exception as e:
@@ -76,26 +84,25 @@ class ziDAQ(object):
             msg = 'settings loaded'
         except FileNotFoundError as e:
             msg = 'using default settings'
+            self._settings['server'] = [['/%s/demods/*/enable' % (self._name), 0],
+                                        ['/%s/demods/*/trigger' % (self._name), 0],
+                                        ['/%s/sigouts/*/enables/*' % (self._name), 0],
+                                        ['/%s/scopes/*/enable' % (self._name), 0],
 
-            settings = [['/%s/demods/*/enable' % (self._name), 0],
-                        ['/%s/demods/*/trigger' % (self._name), 0],
-                        ['/%s/sigouts/*/enables/*' % (self._name), 0],
-                        ['/%s/scopes/*/enable' % (self._name), 0],
+                                        ['/%s/sigins/%d/ac' % (self._name, self._sigin), 1],
+                                        ['/%s/sigins/%d/imp50' % (self._name, self._sigin), 1],
+                                        ['/%s/sigins/%d/diff' % (self._name, self._sigin), 0],
 
-                        ['/%s/sigins/%d/ac' % (self._name, self._sigin), 1],
-                        ['/%s/sigins/%d/imp50' % (self._name, self._sigin), 1],
-                        ['/%s/sigins/%d/diff' % (self._name, self._sigin), 0],
-
-                        ['/%s/demods/0/enable' % (self._name), 1],
-                        ['/%s/demods/0/adcselect' % (self._name), self._sigin],
-                        ['/%s/demods/0/order' % (self._name), 4],
-                        ['/%s/demods/0/timeconstant' % (self._name), 2e-5],
-                        ['/%s/demods/0/rate' % (self._name), 2e5],
-                        ['/%s/demods/0/oscselect' % (self._name), 0],
-                        ['/%s/demods/0/harmonic' % (self._name), 1],
-                        ['/%s/oscs/0/freq' % (self._name), 10280000]]
+                                        ['/%s/demods/0/enable' % (self._name), 1],
+                                        ['/%s/demods/0/adcselect' % (self._name), self._sigin],
+                                        ['/%s/demods/0/order' % (self._name), 4],
+                                        ['/%s/demods/0/timeconstant' % (self._name), 2e-5],
+                                        ['/%s/demods/0/rate' % (self._name), 2e5],
+                                        ['/%s/demods/0/oscselect' % (self._name), 0],
+                                        ['/%s/demods/0/harmonic' % (self._name), 1],
+                                        ['/%s/oscs/0/freq' % (self._name), 10280000]]
         finally:
-            return settings, msg
+            return msg
 
     def _get_config(self):
         """
@@ -108,6 +115,64 @@ class ziDAQ(object):
             self._freq = self.server.getDouble('/%s/oscs/0/freq' % (self._name))
         except Exception as e:
             self.last_action = str(e)
+
+    ############################################################################
+    # Data acquisition module for imaging
+
+    def start_daq(self, imsize, dwell, num_frames=0):
+        # imsize (rows, cols)
+        path = '/%s/demods/0/sample' % (self._name)
+        try:
+            self._daq.set(self._settings['daq'])
+        except KeyError:
+            self._settings['daq'] = [['dataAcquisitionModule/device', self._name],
+                                     ['dataAcquisitionModule/type', 1], # edge trigger
+                                     ['dataAcquisitionModule/triggernode', '%s.auxin1' % (path)],
+                                     ['dataAcquisitionModule/edge', 1], # positive edge
+                                     ['dataAcquisitionModule/level', 2.5],
+                                     ['dataAcquisitionModule/duration', dwell*imsize[1]],
+                                     ['dataAcquisitionModule/delay', 0],
+
+                                     ['dataAcquisitionModule/grid/mode', 2], # linear interpolation
+                                     ['dataAcquisitionModule/grid/repetitions', 1],
+                                     ['dataAcquisitionModule/grid/rows', imsize[0]],
+                                     ['dataAcquisitionModule/grid/cols', imsize[1]],
+                                     ['dataAcquisitionModule/grid/direction', 0],
+
+                                     ['dataAcquisitionModule/refreshrate', 200],
+
+                                     ['dataAcquisitionModule/delay', 0],
+                                     ['dataAcquisitionModule/holdoff/time', 0],
+                                     ['dataAcquisitionModule/holdoff/count', 0]]
+            if num_frames:
+                self._settings['daq'].append(['dataAcquisitionModule/count', num_frames])
+            else:
+                self._settings['daq'].append(['dataAcquisitionModule/endless', True])
+            self._daq.set(self._settings['daq'])
+        finally:
+            self._daq.subscribe('%s.r' % (path))
+            self._daq.execute()
+
+    def read_daq():
+        read = '/%s/demods/0/sample' % (self._name)
+        while not self._daq.finished():
+            try:
+                read = self._daq.read(True)
+                data = np.zeros([512, 512])
+                # Can return multiple frames, but right now only care about most
+                # recent
+                num_frames = len(read['%s.r' % (path)])
+                for i in range(num_frames):
+                    flags = read['%s.r' % (path)][i]['header']['flags']
+                    if flags & 1:
+                        data = np.array(read['%s.r' % (path)][i]['value'])
+                        self.daqData.emit(data)
+            except KeyError:
+                pass
+
+    @property
+    def acquiring(self):
+        return not self._daq.finished()
 
     ############################################################################
     # Polling functions for data retrieval.
@@ -183,6 +248,10 @@ class ziDAQ(object):
             self._api_error = str(msg)
             self.last_action = str(msg)
 
+    @property
+    def name(self):
+        return self._name
+
     ############################################################################
     # Property and setter functions for lockin time constant, modulation
     # frequency and sampling rate
@@ -246,6 +315,7 @@ class ziDAQ(object):
 
         self._rate = self.server.getDouble('/%s/demods/0/rate' % (self._name))
         self.last_action = 'Lockin sampling rate set to %i' % (self._rate)
+
 
     ############################################################################
     # Property and setter functions for signal input/outputs

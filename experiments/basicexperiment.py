@@ -4,10 +4,12 @@ from .controllers.insightcontroller import *
 from .controllers.stagecontroller import *
 from .controllers.zidaqcontroller import *
 from pyforms.controls import ControlButton, ControlEmptyWidget
+from .controllers.gui import ControlMatplotlib
 from .experiment import *
-from .util.imager import *
 import yaml
 import time
+
+from AnyQt.QtCore import QThread
 
 class BasicExperiment(Experiment):
     """
@@ -26,7 +28,11 @@ class BasicExperiment(Experiment):
         self.set_margin(10)
 
         self._calc_omega()
-        self._imager = Imager()
+        #self._figure = plt.figure(1)
+        #self._ax = self._figure.add_subplot(111)
+        #self._img = self._ax.imshow(np.zeros([512, 512]))
+        #plt.ion()
+        self._dwell = float(self._dwell_text.value.strip())/1e6
         # Calibration dictionary structure: self.calib_dict = {'stage': {}, 'dsmpos': {}}
 
     ############################################################################
@@ -54,12 +60,17 @@ class BasicExperiment(Experiment):
         self._tuned_spectrum_button = ControlButton('Tuned Spectrum')
         self._tuned_spectrum_button.value = self._tuned_spectrum
 
+        self._img = ControlMatplotlib(value=np.zeros([512,512]))
+        self._acquire_button = ControlButton('Acquire Image')
+        self._acquire_button.value = self._rtd
+
         self._expmt_panel.value = [ self._wl_label,
                                     self._dwell_text, self._set_dwell_button,
                                     self._omega_text, self._set_omega_button,
-                                    self._optimize_button,
+                                    self._optimize_button, self._acquire_button,
                                     self._tuned_spectrum_button,
-                                    self.expmt_history]
+                                    self._img,
+                                    self._expmt_history]
 
     ############################################################################
     # Wavelength/wavenumber conversion functions
@@ -78,14 +89,14 @@ class BasicExperiment(Experiment):
 
     def _set_dwell(self):
         """Changing pixel dwell time automatically adjusts zidaq TC and sample rate."""
-        dwell = float(self._dwell_text.value.strip())/1e6
-        self.zidaq.tc_text.value = str(dwell/3.)
-        self.zidaq.set_tc_button.click()
-        tc = self.zidaq.tc
+        self._dwell = float(self._dwell_text.value.strip())/1e6
+        self._zidaq.tc_text.value = str(self._dwell/3.)
+        self._zidaq.set_tc_button.click()
+        tc = self._zidaq.tc
 
-        self.zidaq.rate_text.value = str(2./dwell)
-        self.zidaq.set_rate_button.click()
-        rate = self.zidaq.rate
+        self._zidaq.rate_text.value = str(2./dwell)
+        self._zidaq.set_rate_button.click()
+        rate = self._zidaq.rate
 
         msg = 'Lockin TC changed to %f.  Sampling rate changed to %f' % (tc, rate)
 
@@ -119,12 +130,21 @@ class BasicExperiment(Experiment):
     ############################################################################
     # Spectra and image functions
 
-    def _imager(self):
-        """Starts an image acquisition thread using method _acquire"""
-        self._imagerThread = threading.Thread(name='Image Acquisition Thread', \
-                                        target=self._acquire)
-        self._imagerThread.daemon = True
-        self._imagerThread.start()
+    def _rtd(self):
+        self._daq_reader = QThread()
+        self._zidaq.start_daq((512, 512), self._dwell, num_frames=3)
+        self._zidaq.moveToThread(self._daq_reader)
+        self._zidaq.daqData.connect(self._img.read_daq)
+        self._daq_reader.started.connect(self._zidaq.read_daq)
+        self._daq_reader.start()
+
+
+    def update_plot1(self,y):
+        if self.dgen1.mutex.tryLock():
+            y1 = copy(y)
+            self.dgen1.mutex.unlock()
+            self.p1curve.setData(self.x1,y1)
+
 
     def _acquire(self):
         """Defines metadata from current parameters.  Acquires image. Closes laser shutters"""
@@ -137,12 +157,17 @@ class BasicExperiment(Experiment):
         # Figure out how to add trigger for olympus
 
         # Acquire data from lockin
-        x, y, frame, line = self._zidaq.poll()
-        r = (x**2 + y**2)**0.5
+        self._zidaq.start_daq((512, 512), self._dwell, num_frames=3)
+
+        while self._zidaq.acquiring:
+            daq_data = self._zidaq.read_daq()
+            if daq_data.any():
+                self._daq_queue.put(daq_data)
+
+        self._daq_queue.put('Done')
 
         # Image formation and data storage
-        im = self._imager.form_image(r, frame, line)
-        self._data.store(im, meta)
+        self._data.store(daq_data, meta)
 
         # Close shutters again
         self._insight.main_shutter_button.click()

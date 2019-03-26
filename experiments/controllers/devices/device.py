@@ -2,6 +2,7 @@
 
 import serial
 import time
+from AnyQt.QtCore import QObject
 
 class ComError(Exception):
     """Exception for no com input -- For delay stage and insight"""
@@ -11,7 +12,7 @@ class ComError(Exception):
     def __str__(self):
         return self.msg
 
-class Device(object):
+class Device(QObject):
     """
     Base device class. Opens serial communications.
 
@@ -20,6 +21,7 @@ class Device(object):
     """
     num_devices = 0
     def __init__(self, port = None):
+        QObject.__init__(self)
         # Communication port must be provided or initialization will fail
         if port == None:
             raise ComError
